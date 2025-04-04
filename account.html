@@ -39,6 +39,15 @@
     button:hover {
       background: #922fa3;
     }
+    a.continuer {
+      color: #a347ba;
+      text-decoration: none;
+      font-weight: bold;
+      margin-left: 10px;
+    }
+    a.continuer:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -87,6 +96,7 @@
       .from('responses')
       .select('*')
       .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
 
     if (fetchError) {
       booksDiv.innerHTML = "<p>Erreur lors du chargement des réponses.</p>"
@@ -98,7 +108,9 @@
     } else {
       booksDiv.innerHTML = "<ul>" + data.map(r => `
         <li>
-          📘 <strong>Date :</strong> ${new Date(r.created_at).toLocaleDateString()} – <strong>Réponses :</strong> ${Object.keys(r.content).length} questions
+          📘 <strong>Date :</strong> ${new Date(r.created_at).toLocaleDateString()} – 
+          <strong>Réponses :</strong> ${r.content.length} questions – 
+          <a class="continuer" href="chat.html?id=${r.id}">🔁 Continuer</a>
         </li>
       `).join('') + "</ul>"
     }
