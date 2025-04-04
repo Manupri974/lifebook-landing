@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Interview LifeBook</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script type="module" src="https://esm.sh/@supabase/supabase-js"></script>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -21,28 +22,22 @@
       padding: 10px;
       border-radius: 10px;
     }
-    .bot {
-      background: #f3e8fa;
-      color: #5a2a82;
-    }
-    .user {
-      background: #e1f5e8;
-      color: #21543d;
-      text-align: right;
-    }
+    .bot { background: #f3e8fa; color: #5a2a82; }
+    .user { background: #e1f5e8; color: #21543d; text-align: right; }
     #progression {
       margin-top: 10px;
       font-size: 0.9em;
       text-align: right;
       color: #777;
     }
-    input[type="text"] {
+    textarea {
       width: 100%;
       padding: 12px;
       margin-top: 10px;
       box-sizing: border-box;
       border: 1px solid #ccc;
       border-radius: 6px;
+      resize: vertical;
     }
     button {
       padding: 10px 20px;
@@ -55,9 +50,7 @@
       font-weight: bold;
       cursor: pointer;
     }
-    button:hover {
-      background: #912ca3;
-    }
+    button:hover { background: #912ca3; }
     #waveform {
       width: 100%;
       height: 6px;
@@ -76,169 +69,159 @@
   </style>
 </head>
 <body>
-  <div id="chat">
-    <div id="messages"></div>
-    <div id="progression">Question 1 / 89</div>
-    <input id="userInput" type="text" placeholder="Votre réponse..." />
-    <div>
-      <button onclick="sendMessage()">Envoyer</button>
-      <button onclick="passerQuestion()">Passer à la question suivante</button>
-      <button onclick="genererLivre()">Terminer et générer</button>
-    </div>
-    <div style="margin-top:20px">
-      <button id="speechButton" onclick="toggleRecording()">🎙️ Parler</button>
-      <div id="waveform"></div>
-    </div>
+<div id="chat">
+  <div id="messages"></div>
+  <div id="progression">Question 1 / 89</div>
+  <textarea id="userInput" rows="2" placeholder="Votre réponse..."></textarea>
+  <div>
+    <button onclick="sendMessage()">Envoyer</button>
+    <button onclick="passerQuestion()">Passer à la question suivante</button>
+    <button onclick="genererLivre()">Terminer et générer</button>
+    <button onclick="sauvegarder()">💾 Sauvegarder</button>
   </div>
+  <div style="margin-top:20px">
+    <button id="speechButton" onclick="toggleRecording()">🎙️ Parler</button>
+    <div id="waveform"></div>
+  </div>
+</div>
 
-  <script>
-    let historique = [];
-    let questionIndex = 0;
-    let recognition;
-    let recording = false;
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js'
 
-    function afficher(auteur, texte, classe) {
-      const msg = document.createElement("div");
-      msg.className = "message " + classe;
-      msg.innerHTML = `<strong>${auteur} :</strong> ${texte}`;
-      document.getElementById("messages").appendChild(msg);
-      document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
+  const supabase = createClient(
+    'https://qgmxclxahaqnvvxhgcms.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... (ta clé publique)'
+  )
+
+  let historique = []
+  let questionIndex = 0
+  let recognition, recording = false
+
+  function afficher(auteur, texte, classe) {
+    const msg = document.createElement("div")
+    msg.className = "message " + classe
+    msg.innerHTML = `<strong>${auteur} :</strong> ${texte}`
+    document.getElementById("messages").appendChild(msg)
+    document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight
+  }
+
+  function miseAJourProgression() {
+    document.getElementById("progression").innerText = `Question ${questionIndex + 1} / 89`
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById("userInput")
+    const text = input.value.trim()
+    if (!text) return
+    afficher("Vous", text, "user")
+    historique.push({ role: "user", content: text })
+    input.value = ""
+
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: historique })
+    })
+
+    const data = await response.json()
+    const botText = data.reply
+
+    afficher("LifeBook", botText, "bot")
+    historique.push({ role: "assistant", content: botText })
+    questionIndex++
+    miseAJourProgression()
+  }
+
+  function passerQuestion() {
+    historique.push({ role: "user", content: "passons" })
+    sendMessage()
+  }
+
+  async function sauvegarder() {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return alert("Non connecté.")
+    const user = session.user
+
+    const { error } = await supabase.from('responses').insert([{
+      user_id: user.id,
+      content: historique
+    }])
+    if (error) {
+      alert("Erreur de sauvegarde.")
+    } else {
+      alert("Sauvegarde réussie !")
     }
+  }
 
-    function miseAJourProgression() {
-      document.getElementById("progression").innerText = `Question ${questionIndex + 1} / 89`;
-    }
+  async function genererLivre() {
+    const prompt = `Rédige un texte biographique littéraire à partir des réponses suivantes :\n\n${historique.filter(m => m.role === 'user').map(m => m.content).join('\n')}`
 
-    async function sendMessage() {
-      const input = document.getElementById("userInput");
-      const text = input.value.trim();
-      if (!text) return;
-      afficher("Vous", text, "user");
-      historique.push({ role: "user", content: text });
-      input.value = "";
-
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: historique })
-      });
-
-      const data = await response.json();
-      const botText = data.reply;
-
-      afficher("LifeBook", botText, "bot");
-      historique.push({ role: "assistant", content: botText });
-      questionIndex++;
-      miseAJourProgression();
-
-      fetch("/api/voice", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: botText })
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages: [
+          { role: "system", content: "Tu es un écrivain biographe. Transforme les réponses suivantes en une narration fluide, littéraire et émotive, dans l’ordre chronologique." },
+          { role: "user", content: prompt }
+        ]
       })
-      .then(res => res.blob())
-      .then(blob => {
-        const audio = new Audio(URL.createObjectURL(blob));
-        audio.play();
-      });
-    }
+    })
 
-    function passerQuestion() {
-      historique.push({ role: "user", content: "passons" });
-      sendMessage();
-    }
+    const data = await response.json()
+    const { jsPDF } = window.jspdf
+    const doc = new jsPDF()
+    const lines = doc.splitTextToSize(data.reply, 180)
+    doc.text(lines, 15, 20)
+    doc.save("LifeBook.pdf")
+  }
 
-    async function genererLivre() {
-      const prompt = `Rédige un texte biographique littéraire à partir des réponses suivantes :\n\n${historique
-        .map(m => m.role === 'user' ? m.content : '')
-        .filter(Boolean)
-        .join('\n')}`;
+  async function initChat() {
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: [] })
+    })
+    const data = await response.json()
+    afficher("LifeBook", data.reply, "bot")
+    historique.push({ role: "assistant", content: data.reply })
+  }
 
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [
-            { role: "system", content: "Tu es un écrivain biographe. Transforme les réponses suivantes en une narration fluide, littéraire et émotive, dans l’ordre chronologique." },
-            { role: "user", content: prompt }
-          ]
-        })
-      });
+  function toggleRecording() {
+    const button = document.getElementById("speechButton")
+    const waveform = document.getElementById("waveform")
 
-      const data = await response.json();
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      const lines = doc.splitTextToSize(data.reply, 180);
-      doc.text(lines, 15, 20);
-      doc.save("LifeBook.pdf");
-    }
+    if (!recording) {
+      recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)()
+      recognition.lang = "fr-FR"
+      waveform.style.display = "block"
+      button.textContent = "🛑 Stop"
+      recording = true
 
-    document.getElementById("userInput").addEventListener("keypress", function (e) {
-      if (e.key === "Enter") {
-        sendMessage();
+      recognition.onresult = function (event) {
+        const result = event.results[0][0].transcript
+        document.getElementById("userInput").value = result
+        waveform.style.display = "none"
+        button.textContent = "🎙️ Parler"
+        recording = false
+        sendMessage()
       }
-    });
 
-    async function initChat() {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: [] })
-      });
-
-      const data = await response.json();
-      afficher("LifeBook", data.reply, "bot");
-      historique.push({ role: "assistant", content: data.reply });
-
-      fetch("/api/voice", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: data.reply })
-      })
-      .then(res => res.blob())
-      .then(blob => {
-        const audio = new Audio(URL.createObjectURL(blob));
-        audio.play();
-      });
-    }
-
-    function toggleRecording() {
-      const button = document.getElementById("speechButton");
-      const waveform = document.getElementById("waveform");
-
-      if (!recording) {
-        recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        recognition.lang = "fr-FR";
-        recognition.interimResults = false;
-        waveform.style.display = "block";
-        button.textContent = "🛑 Stop";
-        recording = true;
-
-        recognition.onresult = function (event) {
-          const result = event.results[0][0].transcript;
-          document.getElementById("userInput").value = result;
-          waveform.style.display = "none";
-          button.textContent = "🎙️ Parler";
-          recording = false;
-          sendMessage();
-        };
-
-        recognition.onerror = function () {
-          waveform.style.display = "none";
-          button.textContent = "🎙️ Parler";
-          recording = false;
-        };
-
-        recognition.start();
-      } else {
-        recognition.stop();
-        waveform.style.display = "none";
-        button.textContent = "🎙️ Parler";
-        recording = false;
+      recognition.onerror = function () {
+        waveform.style.display = "none"
+        button.textContent = "🎙️ Parler"
+        recording = false
       }
-    }
 
-    window.onload = initChat;
-  </script>
+      recognition.start()
+    } else {
+      recognition.stop()
+      waveform.style.display = "none"
+      button.textContent = "🎙️ Parler"
+      recording = false
+    }
+  }
+
+  window.onload = initChat
+</script>
 </body>
 </html>
