@@ -2,87 +2,108 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>LifeBook</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
   <style>
     body {
       margin: 0;
-      font-family: "Helvetica Neue", sans-serif;
-      background: linear-gradient(to right, #f4b6c2, #c2d3f4);
-      color: #333;
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #f4b6c2, #c2d3f4);
+      color: #2c2c2c;
     }
     header {
-      background: rgba(255, 255, 255, 0.9);
-      padding: 20px;
       text-align: center;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      padding: 60px 20px 30px;
+      color: white;
     }
-    h1 {
-      margin: 0;
-      font-size: 2.5em;
-      color: #5f3dc4;
+    header h1 {
+      font-size: 3em;
+      margin-bottom: 10px;
     }
-    .cta {
-      margin-top: 10px;
+    header p {
       font-size: 1.2em;
+      max-width: 600px;
+      margin: auto;
     }
     .section {
-      max-width: 800px;
+      max-width: 1000px;
       margin: 60px auto;
       padding: 0 20px;
     }
     .steps {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
+      display: flex;
+      flex-wrap: wrap;
       gap: 30px;
-      margin-top: 40px;
+      justify-content: space-between;
     }
     .step {
       background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      flex: 1;
+      min-width: 250px;
       padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .step strong {
+      font-size: 1.5em;
+      color: #5f3dc4;
     }
     .pricing {
       display: flex;
-      justify-content: center;
+      flex-wrap: wrap;
       gap: 30px;
-      margin-top: 40px;
+      justify-content: center;
     }
     .price-card {
       background: white;
+      border-radius: 12px;
       padding: 20px;
-      border-radius: 8px;
-      width: 200px;
       text-align: center;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      width: 200px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
     footer {
+      background: #fff;
+      color: #999;
       text-align: center;
-      font-size: 0.9em;
       padding: 40px 20px;
-      background: rgba(0, 0, 0, 0.05);
       margin-top: 60px;
+      font-size: 0.9em;
+    }
+    .family-photo {
+      width: 100%;
+      max-width: 900px;
+      margin: 40px auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      display: block;
     }
   </style>
 </head>
 <body>
+
   <header>
     <h1>LifeBook</h1>
-    <div class="cta">Créez un e-book biographique à partir des souvenirs de vos proches ❤️</div>
+    <p>Transformez les souvenirs d’un parent ou d’un proche en un livre biographique émouvant. Posez des questions, laissez l’IA écrire l’histoire.</p>
   </header>
+
+  <img src="https://images.unsplash.com/photo-1607746882042-944635dfe10e?auto=format&fit=crop&w=1000&q=80" alt="Famille" class="family-photo">
 
   <div class="section">
     <h2>Comment ça marche ?</h2>
     <div class="steps">
       <div class="step">
-        <strong>1.</strong> Interviewez un proche via notre chat intelligent.
+        <strong>1.</strong><br/>
+        Interviewez un proche via une interface chat simple.
       </div>
       <div class="step">
-        <strong>2.</strong> L'IA transforme ses réponses en un récit fluide.
+        <strong>2.</strong><br/>
+        L’IA transforme la discussion en un récit fluide.
       </div>
       <div class="step">
-        <strong>3.</strong> Téléchargez un e-book à imprimer ou à offrir.
+        <strong>3.</strong><br/>
+        Téléchargez un e-book ou imprimez-le pour l’offrir.
       </div>
     </div>
   </div>
@@ -92,11 +113,11 @@
     <div class="pricing">
       <div class="price-card">
         <h3>Gratuit</h3>
-        <p>Interview + e-book simple PDF</p>
+        <p>Interview + e-book PDF simple</p>
       </div>
       <div class="price-card">
         <h3>Premium</h3>
-        <p>9 €<br/>Mise en page pro + couverture</p>
+        <p>9 €<br/>Mise en page élégante + couverture</p>
       </div>
       <div class="price-card">
         <h3>Deluxe</h3>
@@ -106,7 +127,7 @@
   </div>
 
   <footer>
-    © LifeBook 2025 — Tous droits réservés
+    © LifeBook 2025 — Tous droits réservés • hello@lifebook.fr
   </footer>
 </body>
 </html>
