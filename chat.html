@@ -246,45 +246,44 @@
 
   <!-- Supabase script pour la sauvegarde -->
   <script type="module">
-    import { createClient } from 'https://esm.sh/@supabase/supabase-js'
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js'
 
-    const supabase = createClient(
-      'https://qgmxclxahaqnvvxhgcms.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnbXhjbHhhaHFudnZ4aGdjbXMiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc0Mzc5NjE4NiwieHB...'
-    );
+  const supabase = createClient(
+    'https://qgmxclxahaqnvvxhgcms.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnbXhjbHhhaGFxbnZ2eGhnY21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM3OTYxODYsImV4cCI6MjA1OTM3MjE4Nn0.PhMpyFo9ZRgtLHdRyo6MXNjFNFy5WkH8LeqWnPJJCIE'
+  );
 
-    const bouton = document.getElementById("saveButton");
-    const status = document.getElementById("messageStatus");
+  const bouton = document.getElementById("saveButton");
+  const status = document.getElementById("messageStatus");
 
-    bouton.addEventListener("click", async () => {
-      status.textContent = "⏳ Sauvegarde en cours...";
-      status.style.color = "black";
+  bouton.addEventListener("click", async () => {
+    status.textContent = "⏳ Sauvegarde en cours...";
+    status.style.color = "black";
 
-      const { data: { session }, error } = await supabase.auth.getSession();
+    const { data: { session }, error } = await supabase.auth.getSession();
 
-      if (!session || error) {
-        status.textContent = "❌ Non connecté.";
-        status.style.color = "red";
-        return;
-      }
+    if (!session || error) {
+      status.textContent = "❌ Non connecté.";
+      status.style.color = "red";
+      return;
+    }
 
-      const user = session.user;
-      const { error: insertError } = await supabase
-        .from("responses")
-        .insert([{ user_id: user.id, content: window.historique }]);
+    const user = session.user;
+    const { error: insertError } = await supabase
+      .from("responses")
+      .insert([{ user_id: user.id, content: window.historique }]);
 
     if (insertError) {
-  console.error("Erreur Supabase :", insertError);
-  status.textContent = "❌ Erreur : " + insertError.message;
-  status.style.color = "red";
-}
-    else {
-        status.textContent = "✅ Interview sauvegardée avec succès !";
-        status.style.color = "green";
-      }
+      console.error("Erreur Supabase :", insertError);
+      status.textContent = "❌ Erreur : " + insertError.message;
+      status.style.color = "red";
+    } else {
+      status.textContent = "✅ Interview sauvegardée avec succès !";
+      status.style.color = "green";
+    }
 
-      setTimeout(() => (status.textContent = ""), 4000);
-    });
-  </script>
+    setTimeout(() => (status.textContent = ""), 4000);
+  });
+</script>
 </body>
 </html>
