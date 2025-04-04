@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chat LifeBook</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f0fa;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    header {
+      padding: 20px;
+      background: #a347ba;
+      color: white;
+      text-align: center;
+      font-size: 1.5em;
+    }
+    #chat {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      background: #fff;
+    }
+    .message {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 8px;
+      max-width: 80%;
+    }
+    .bot {
+      background: #f0dfff;
+      align-self: flex-start;
+    }
+    .user {
+      background: #d0f5c8;
+      align-self: flex-end;
+    }
+    #input-area {
+      display: flex;
+      padding: 10px;
+      background: #eee;
+    }
+    input {
+      flex: 1;
+      padding: 10px;
+      font-size: 1em;
+      border: none;
+      border-radius: 5px;
+      margin-right: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 1em;
+      background: #a347ba;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <header>LifeBook – Interview</header>
+  <div id="chat"></div>
+  <div id="input-area">
+    <input type="text" id="user-input" placeholder="Votre réponse..." />
+    <button onclick="sendMessage()">Envoyer</button>
+  </div>
+
+  <script>
+    const chat = document.getElementById("chat");
+    const input = document.getElementById("user-input");
+
+    // 🧠 Clé API OpenAI – temporairement ici pour test
+    const apiKey = "sk-XXXXXXX"; // 🔁 Remplace avec ta clé API pour tester
+
+    const systemPrompt = {
+      role: "system",
+      content: "Tu es un biographe bienveillant. Pose des questions personnelles pour écrire la vie de l'utilisateur sous forme de récit. Pose une question à la fois."
+    };
+
+    let messages = [systemPrompt];
+
+    // Démarrer la conversation
+    addMessage("Bonjour et bienvenue dans LifeBook. Pour commencer : Où êtes-vous né(e) ?", "bot");
+
+    function addMessage(text, sender) {
+      const msg = document.createElement("div");
+      msg.className = `message ${sender}`;
+      msg.textContent = text;
+      chat.appendChild(msg);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const userText = input.value.trim();
+      if (!userText) return;
+
+      addMessage(userText, "user");
+      input.value = "";
+
+      messages.push({ role: "user", content: userText });
+
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: messages
+        })
+      });
+
+      const data = await response.json();
+      const botReply = data.choices?.[0]?.message?.content || "Désolé, une erreur est survenue.";
+      addMessage(botReply, "bot");
+
+      messages.push({ role: "assistant", content: botReply });
+    }
+  </script>
+</body>
+</html>
