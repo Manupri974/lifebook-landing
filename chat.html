@@ -117,14 +117,29 @@ Toujours une seule question par réponse.`
       chatBox.scrollTop = chatBox.scrollHeight;
     }
 
+    userInput.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        sendMessage();
+      }
+    });
+
     async function generateNarrativePdf() {
       addMessage('bot', "Génération du livre en cours...");
+
+      const filteredConversation = conversation.filter(
+        msg => msg.role === 'user'
+      );
+
       const messages = [
         {
           role: 'system',
-          content: "Tu es un écrivain biographique. Rédige un récit fluide, littéraire et émouvant à partir de ces réponses."
+          content: "Tu es un écrivain biographique. Tu vas rédiger un récit littéraire à partir des souvenirs suivants. Tu ne dois pas recopier les questions, mais transformer les réponses en une narration fluide, vivante, humaine."
         },
-        ...conversation
+        {
+          role: 'user',
+          content: filteredConversation.map((m, i) => `Souvenir ${i + 1} : ${m.content}`).join('\n\n')
+        }
       ];
 
       const res = await fetch('/api/chat', {
@@ -142,7 +157,6 @@ Toujours une seule question par réponse.`
       doc.save('lifebook.pdf');
     }
 
-    // Démarrage : première question via API
     async function initChat() {
       const messages = [systemPrompt];
 
