@@ -130,11 +130,16 @@
       questionIndex++;
       miseAJourProgression();
 
-      // Synthèse vocale appelée sans attendre (parallèle)
+      // Lecture de la voix avec réponse
       fetch("/api/voice", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: botText })
+      })
+      .then(res => res.blob())
+      .then(blob => {
+        const audio = new Audio(URL.createObjectURL(blob));
+        audio.play();
       });
     }
 
@@ -190,6 +195,11 @@
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: data.reply })
+      })
+      .then(res => res.blob())
+      .then(blob => {
+        const audio = new Audio(URL.createObjectURL(blob));
+        audio.play();
       });
     }
 
