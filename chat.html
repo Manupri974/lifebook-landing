@@ -1,90 +1,129 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
-
-export default function LifeBook() {
-  const [messages, setMessages] = useState([
-    { from: "bot", text: "Bienvenue dans LifeBook. Offrez un livre de souvenirs à vos proches. Pour commencer : Où êtes-vous né(e) ?" }
-  ]);
-  const [input, setInput] = useState("");
-  const [conversationLog, setConversationLog] = useState([
-    { role: "bot", text: "Bienvenue dans LifeBook. Offrez un livre de souvenirs à vos proches. Pour commencer : Où êtes-vous né(e) ?" }
-  ]);
-
-  const handleSend = async () => {
-    if (!input.trim()) return;
-    const userMessage = { from: "user", text: input };
-    const updatedMessages = [...messages, userMessage];
-    const updatedLog = [...conversationLog, { role: "user", text: input }];
-    setMessages(updatedMessages);
-    setConversationLog(updatedLog);
-    setInput("");
-
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: buildMessages(updatedLog) })
-      });
-
-      const data = await res.json();
-      const botReply = { from: "bot", text: data.reply };
-      setMessages([...updatedMessages, botReply]);
-      setConversationLog([...updatedLog, { role: "bot", text: data.reply }]);
-    } catch (err) {
-      console.error("Erreur :", err);
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LifeBook – Interview</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #fff8fe;
+      color: #333;
+      padding: 40px;
     }
-  };
+    h1 {
+      text-align: center;
+      color: #a347ba;
+    }
+    .chat-box {
+      max-width: 700px;
+      margin: 40px auto;
+    }
+    .message {
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    .bot {
+      background-color: #f1dcfc;
+    }
+    .user {
+      background-color: #d9fdd3;
+    }
+    .input-box {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    input[type="text"] {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    button {
+      background: #a347ba;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #8b2ca5;
+    }
+  </style>
+</head>
+<body>
+  <h1>LifeBook – Interview</h1>
+  <div class="chat-box" id="chat"></div>
+  <div class="chat-box input-box">
+    <input type="text" id="userInput" placeholder="Écrivez votre réponse ici...">
+    <button onclick="sendMessage()">Envoyer</button>
+  </div>
+  <div class="chat-box" style="text-align: center; margin-top: 30px">
+    <button onclick="generateNarrativePdf()">Terminer et générer</button>
+  </div>
 
-  const buildMessages = (log) => [
-    { role: "system", content: "Tu es un biographe bienveillant. Pose des questions personnelles pour écrire un livre de souvenirs. Pose une question à la fois." },
-    ...log.map(msg => ({ role: msg.role === "bot" ? "assistant" : "user", content: msg.text }))
-  ];
+  <script>
+    const chatBox = document.getElementById('chat');
+    const userInput = document.getElementById('userInput');
+    let conversation = [];
 
-  const generatePdf = async () => {
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        messages: [
-          { role: "system", content: "Tu es un écrivain littéraire. Rédige un récit biographique fluide et touchant à partir de cette conversation." },
-          { role: "user", content: JSON.stringify(conversationLog) }
-        ]
-      })
-    });
+    function addMessage(from, text) {
+      const msg = document.createElement('div');
+      msg.className = 'message ' + (from === 'bot' ? 'bot' : 'user');
+      msg.innerHTML = `<strong>${from === 'bot' ? 'LifeBook' : 'Vous'}:</strong> ${text}`;
+      chatBox.appendChild(msg);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
 
-    const data = await res.json();
-    const jsPDF = (await import("jspdf")).jsPDF;
-    const doc = new jsPDF();
-    const lines = doc.splitTextToSize(data.reply, 180);
-    doc.text(lines, 10, 10);
-    doc.save("lifebook.pdf");
-  };
+    function sendMessage() {
+      const text = userInput.value.trim();
+      if (!text) return;
+      addMessage('user', text);
+      conversation.push({ role: 'user', content: text });
+      userInput.value = '';
+      getNextBotQuestion();
+    }
 
-  return (
-    <div className="max-w-2xl mx-auto mt-10 p-4">
-      <h1 className="text-3xl font-bold mb-6 text-center text-purple-700">LifeBook</h1>
-      <div className="space-y-4 mb-4">
-        {messages.map((msg, index) => (
-          <Card key={index} className={msg.from === "user" ? "bg-blue-50" : "bg-purple-50"}>
-            <CardContent className="p-4">
-              <p><strong>{msg.from === "bot" ? "LifeBook" : "Vous"}:</strong> {msg.text}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-      <div className="flex gap-2 mb-4">
-        <Input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Écrivez votre réponse ici..."
-        />
-        <Button onClick={handleSend}>Envoyer</Button>
-      </div>
-      <div className="text-center">
-        <Button variant="secondary" onClick={generatePdf}>Terminer et générer</Button>
-      </div>
-    </div>
-  );
-}
+    async function getNextBotQuestion() {
+      const prompt = conversation.length === 1
+        ? "Parfait. Quel est ton tout premier souvenir marquant ?"
+        : conversation.length === 3
+        ? "Y avait-il quelqu'un de spécial qui t'accompagnait à cette période ?"
+        : "Merci ! Continue à me raconter ce souvenir en détail.";
+      addMessage('bot', prompt);
+      conversation.push({ role: 'assistant', content: prompt });
+    }
+
+    async function generateNarrativePdf() {
+      addMessage('bot', "Génération du livre en cours...");
+      const systemPrompt = {
+        role: 'system',
+        content: "Tu es un écrivain biographique. Rédige un récit fluide, littéraire et émouvant à partir de ces réponses."
+      };
+
+      const messages = [systemPrompt, ...conversation];
+
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages })
+      });
+      const data = await res.json();
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const lines = doc.splitTextToSize(data.reply || "(erreur lors de la génération)", 180);
+      doc.text(lines, 10, 10);
+      doc.save('lifebook.pdf');
+    }
+
+    // Start message
+    addMessage('bot', "Bonjour et bienvenue dans LifeBook. Pour commencer : Où êtes-vous né(e) ?");
+    conversation.push({ role: 'assistant', content: "Bonjour et bienvenue dans LifeBook. Pour commencer : Où êtes-vous né(e) ?" });
+  </script>
+</body>
+</html>
