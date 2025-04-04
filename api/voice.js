@@ -6,28 +6,31 @@ export default async function handler(req, res) {
   const { text } = req.body;
 
   if (!text) {
-    return res.status(400).json({ error: 'Texte manquant' });
+    return res.status(400).json({ error: 'Texte requis' });
   }
 
-  const openaiRes = await fetch("https://api.openai.com/v1/audio/speech", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      model: "tts-1",        // Ou "tts-1-hd"
-      voice: "nova",         // Voix féminine naturelle
-      input: text
-    })
-  });
+  try {
+    const response = await fetch('https://api.openai.com/v1/audio/speech', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'tts-1',
+        voice: 'nova',
+        input: text,
+        response_format: 'mp3'
+      })
+    });
 
-  if (!openaiRes.ok) {
-    const errorData = await openaiRes.json();
-    return res.status(500).json({ error: "Erreur API OpenAI", detail: errorData });
+    const audioBuffer = await response.arrayBuffer();
+
+    res.setHeader('Content-Type', 'audio/mpeg');
+    res.setHeader('Content-Disposition', 'inline; filename=\"voice.mp3\"');
+    res.send(Buffer.from(audioBuffer));
+  } catch (error) {
+    console.error('Erreur synthèse vocale :', error);
+    res.status(500).json({ error: 'Erreur de synthèse vocale' });
   }
-
-  const audioBuffer = await openaiRes.arrayBuffer();
-  res.setHeader("Content-Type", "audio/mpeg");
-  res.send(Buffer.from(audioBuffer));
 }
