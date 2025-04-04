@@ -178,7 +178,14 @@
         sendMessage();
       }
     });
-
+    
+async function sauvegarder() {
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  if (!session || sessionError) {
+    alert("Non connecté.");
+    return;
+  }
+  
     async function initChat() {
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -201,12 +208,6 @@
         audio.play();
       });
     }
-async function sauvegarder() {
-  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-  if (!session || sessionError) {
-    alert("Non connecté.");
-    return;
-  }
 
   const user = session.user;
 
