@@ -1,155 +1,199 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chat LifeBook</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LifeBook – Interview</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
   <style>
     body {
-      font-family: 'Inter', sans-serif;
-      background: #fdf7ff;
       margin: 0;
-      padding: 0;
+      font-family: 'Inter', sans-serif;
+      background: #fcefff;
+      color: #333;
     }
     header {
       background: #a347ba;
-      color: white;
-      padding: 15px;
-      text-align: center;
-    }
-    #chat-container {
-      max-width: 800px;
-      margin: 30px auto;
-      background: white;
-      border-radius: 10px;
       padding: 20px;
+      text-align: center;
+      color: white;
+      font-size: 1.5em;
+      font-weight: bold;
+    }
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
     .message {
-      margin: 10px 0;
+      margin-bottom: 15px;
     }
-    .from-bot {
+    .message.bot {
       color: #a347ba;
       font-weight: bold;
     }
-    .from-user {
-      color: #444;
+    .message.user {
+      color: #333;
     }
     input[type="text"] {
       width: 100%;
       padding: 10px;
-      font-size: 1em;
-      margin-top: 15px;
-      box-sizing: border-box;
-    }
-    .button-row {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 20px;
+      border: 2px solid #ccc;
+      border-radius: 6px;
+      margin-bottom: 15px;
     }
     button {
-      background: #a347ba;
-      color: white;
-      border: none;
       padding: 10px 20px;
-      font-size: 1em;
+      border: none;
       border-radius: 6px;
+      margin: 5px;
+      font-weight: bold;
       cursor: pointer;
     }
-    button:hover {
-      background: #922fa3;
+    button.send {
+      background-color: #a347ba;
+      color: white;
+    }
+    button.save {
+      background-color: #6c63ff;
+      color: white;
+    }
+    button.home {
+      background-color: #ccc;
+      color: black;
+    }
+    .mic-button {
+      background: transparent;
+      border: 2px solid #a347ba;
+      border-radius: 50%;
+      width: 48px;
+      height: 48px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .mic-button.recording {
+      background-color: #a347ba;
+      color: white;
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>LifeBook – Interview</h1>
-  </header>
-
-  <div id="chat-container">
-    <div id="messages"></div>
-
-    <input type="text" id="input" placeholder="Écrivez votre réponse ici..." />
-
-    <div class="button-row">
-      <button id="sendBtn">Envoyer</button>
-      <button id="saveBtn">Enregistrer</button>
-      <button id="homeBtn">Accueil</button>
+  <header>LifeBook – Interview</header>
+  <div class="container">
+    <div id="chat"></div>
+    <input type="text" id="userInput" placeholder="Écrivez votre réponse ici..." />
+    <button class="send" onclick="sendMessage()">Envoyer</button>
+    <button class="save" onclick="saveProgress()">Enregistrer</button>
+    <button class="home" onclick="window.location.href='index.html'">Accueil</button>
+    <div style="margin-top:20px;text-align:center;">
+      <button id="micButton" class="mic-button" onclick="toggleRecording()">🎤</button>
     </div>
   </div>
 
   <script type="module">
-    import { createClient } from 'https://esm.sh/@supabase/supabase-js';
-
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js'
     const supabase = createClient(
       'https://qgmxclxahaqnvvxhgcms.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnbXhjbHhhaGFxbnZ2eGhnY21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM3OTYxODYsImV4cCI6MjA1OTM3MjE4Nn0.PhMpyFo9ZRgtLHdRyo6MXNjFNFy5WkH8LeqWnPJJCIE'
-    );
+    )
 
-    const messagesDiv = document.getElementById('messages');
-    const input = document.getElementById('input');
-    const sendBtn = document.getElementById('sendBtn');
-    const saveBtn = document.getElementById('saveBtn');
-    const homeBtn = document.getElementById('homeBtn');
+    let conversation = []
+    let recording = false
+    let recognition
+    let currentUserId = null
 
-    let conversation = [];
-    let userId = null;
-
-    async function loadUser() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) window.location.href = "/auth.html";
-      userId = session.user.id;
+    async function init() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        window.location.href = '/auth.html'
+        return
+      }
+      currentUserId = user.id
+      conversation.push({ from: 'bot', text: "Bienvenue dans LifeBook. Pour commencer, quel est votre prénom ?" })
+      renderChat()
+      speak("Bienvenue dans LifeBook. Pour commencer, quel est votre prénom ?")
     }
 
-    function addMessage(from, text) {
-      const div = document.createElement('div');
-      div.className = 'message ' + (from === 'bot' ? 'from-bot' : 'from-user');
-      div.innerHTML = `<strong>${from === 'bot' ? 'LifeBook' : 'Vous'}:</strong> ${text}`;
-      messagesDiv.appendChild(div);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    function renderChat() {
+      const chatDiv = document.getElementById('chat')
+      chatDiv.innerHTML = conversation.map(msg => `<div class="message ${msg.from}"><strong>${msg.from === 'bot' ? 'LifeBook' : 'Vous'}:</strong> ${msg.text}</div>`).join('')
     }
 
     async function sendMessage() {
-      const text = input.value.trim();
-      if (!text) return;
-
-      addMessage('user', text);
-      conversation.push({ from: 'user', text });
-      input.value = '';
-
+      const input = document.getElementById('userInput')
+      const text = input.value.trim()
+      if (!text) return
+      conversation.push({ from: 'user', text })
+      input.value = ''
+      renderChat()
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: conversation })
-      });
-
-      const data = await res.json();
-      addMessage('bot', data.reply);
-      conversation.push({ from: 'bot', text: data.reply });
+        body: JSON.stringify({ conversation })
+      })
+      const data = await res.json()
+      conversation.push({ from: 'bot', text: data.reply })
+      renderChat()
+      speak(data.reply)
     }
 
-    sendBtn.addEventListener('click', sendMessage);
-    input.addEventListener('keydown', e => {
-      if (e.key === 'Enter') sendMessage();
-    });
+    async function speak(text) {
+      const res = await fetch('/api/voice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      })
+      const blob = await res.blob()
+      const audio = new Audio(URL.createObjectURL(blob))
+      audio.play()
+    }
 
-    saveBtn.addEventListener('click', async () => {
-      const { error } = await supabase.from('responses').insert({
-        user_id: userId,
-        content: conversation
-      });
-      if (!error) alert("Progression sauvegardée ✅");
-      else alert("Erreur lors de la sauvegarde ❌");
-    });
+    async function saveProgress() {
+      if (!currentUserId) return alert("Non connecté")
+      await supabase.from('responses').insert({ user_id: currentUserId, content: conversation })
+      alert("Progression enregistrée")
+    }
 
-    homeBtn.addEventListener('click', () => {
-      window.location.href = "/index.html";
-    });
+    function toggleRecording() {
+      const micButton = document.getElementById('micButton')
+      if (!recording) {
+        micButton.classList.add('recording')
+        startListening()
+      } else {
+        micButton.classList.remove('recording')
+        stopListening()
+      }
+      recording = !recording
+    }
 
-    // Chargement initial
-    await loadUser();
-    addMessage('bot', "Bienvenue dans LifeBook. Pour commencer, quel est votre prénom ?");
-    conversation.push({ from: 'bot', text: "Bienvenue dans LifeBook. Pour commencer, quel est votre prénom ?" });
+    function startListening() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+      recognition = new SpeechRecognition()
+      recognition.lang = 'fr-FR'
+      recognition.interimResults = false
+      recognition.maxAlternatives = 1
+
+      recognition.onresult = (event) => {
+        const text = event.results[0][0].transcript
+        document.getElementById('userInput').value = text
+        sendMessage()
+      }
+
+      recognition.start()
+    }
+
+    function stopListening() {
+      if (recognition) recognition.stop()
+    }
+
+    init()
   </script>
 </body>
 </html>
