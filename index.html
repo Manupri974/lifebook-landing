@@ -118,7 +118,7 @@
       <a href="#accueil">Accueil</a>
       <a href="#fonctionnement">Fonctionnement</a>
       <a href="#tarifs">Tarifs</a>
-      <a href="#commencer" id="btnCommencer">Commencer</a>
+      <a href="#commencer" class="btnCommencer">Commencer</a>
       <a href="#connexion">Connexion</a>
     </nav>
   </header>
@@ -127,7 +127,7 @@
     <h2>Offrez un livre de souvenirs</h2>
     <p>LifeBook vous aide à interviewer vos proches et transforme leurs histoires en un e-book biographique, à garder ou à offrir.</p>
     <div class="cta">
-      <a href="#" id="btnCommencer">Commencer maintenant</a>
+      <a href="#" class="btnCommencer">Commencer maintenant</a>
     </div>
   </section>
 
@@ -176,7 +176,7 @@
     <h2>Commencer l'interview</h2>
     <p style="text-align:center">Connectez-vous pour lancer votre interview ou en créer une nouvelle.</p>
     <div class="cta" style="text-align:center;">
-      <a href="#" id="btnCommencer">Créer un compte ou se connecter</a>
+      <a href="#" class="btnCommencer">Créer un compte ou se connecter</a>
     </div>
   </section>
 
@@ -193,8 +193,8 @@
     )
 
     document.addEventListener("DOMContentLoaded", async () => {
-      const boutonCommencer = document.querySelectorAll('#btnCommencer')
-      boutonCommencer.forEach(btn => {
+      const boutonsCommencer = document.querySelectorAll('.btnCommencer')
+      boutonsCommencer.forEach(btn => {
         btn.addEventListener('click', async (e) => {
           e.preventDefault()
           const { data: { session } } = await supabase.auth.getSession()
