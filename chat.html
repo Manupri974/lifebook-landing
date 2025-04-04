@@ -61,6 +61,8 @@
   <div class="chat-box input-box">
     <input type="text" id="userInput" placeholder="Écrivez votre réponse ici...">
     <button onclick="sendMessage()">Envoyer</button>
+    <button onclick="startRecognition()">🎙️</button>
+    <button onclick="toggleMute()" id="muteButton">🔊</button>
   </div>
   <div class="chat-box" style="text-align: center; margin-top: 30px">
     <button onclick="generateNarrativePdf()">Terminer et générer</button>
@@ -69,7 +71,9 @@
   <script>
     const chatBox = document.getElementById('chat');
     const userInput = document.getElementById('userInput');
+    const muteButton = document.getElementById('muteButton');
     let conversation = [];
+    let isMuted = false;
 
     const systemPrompt = {
       role: 'system',
@@ -103,6 +107,12 @@ Toujours une seule question par réponse.`
 
         addMessage('bot', reply);
         conversation.push({ role: 'assistant', content: reply });
+
+        if (!isMuted && 'speechSynthesis' in window) {
+          const utterance = new SpeechSynthesisUtterance(reply);
+          utterance.lang = 'fr-FR';
+          speechSynthesis.speak(utterance);
+        }
       } catch (error) {
         addMessage('bot', "Désolé, une erreur est survenue. Réessayez plus tard.");
         console.error(error);
@@ -123,6 +133,30 @@ Toujours une seule question par réponse.`
         sendMessage();
       }
     });
+
+    function toggleMute() {
+      isMuted = !isMuted;
+      muteButton.textContent = isMuted ? '🔇' : '🔊';
+    }
+
+    function startRecognition() {
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = 'fr-FR';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onresult = function(event) {
+        const transcript = event.results[0][0].transcript;
+        userInput.value = transcript;
+        sendMessage();
+      };
+
+      recognition.onerror = function(event) {
+        console.error("Erreur reconnaissance vocale:", event.error);
+      };
+
+      recognition.start();
+    }
 
     async function generateNarrativePdf() {
       addMessage('bot', "Génération du livre en cours...");
@@ -172,6 +206,12 @@ Toujours une seule question par réponse.`
 
         addMessage('bot', reply);
         conversation.push({ role: 'assistant', content: reply });
+
+        if (!isMuted && 'speechSynthesis' in window) {
+          const utterance = new SpeechSynthesisUtterance(reply);
+          utterance.lang = 'fr-FR';
+          speechSynthesis.speak(utterance);
+        }
       } catch (error) {
         addMessage('bot', "Erreur au démarrage du chat.");
         console.error(error);
