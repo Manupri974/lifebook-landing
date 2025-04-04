@@ -115,10 +115,10 @@
     }
 
     async function genererLivre() {
-      const prompt = `Rédige un texte biographique littéraire à partir des réponses suivantes :\\n\\n${historique
+      const prompt = `Rédige un texte biographique littéraire à partir des réponses suivantes :\n\n${historique
         .map(m => m.role === 'user' ? m.content : '')
         .filter(Boolean)
-        .join('\\n')}`;
+        .join('\n')}`;
 
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -140,11 +140,25 @@
       a.click();
     }
 
-    // Démarrer l’interview automatiquement
-    window.onload = () => {
-      historique.push({ role: "user", content: "Bonjour" });
-      sendMessage();
-    };
+    document.getElementById("userInput").addEventListener("keypress", function (e) {
+      if (e.key === "Enter") {
+        sendMessage();
+      }
+    });
+
+    async function initChat() {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: [] })
+      });
+
+      const data = await response.json();
+      afficher("LifeBook", data.reply, "bot");
+      historique.push({ role: "assistant", content: data.reply });
+    }
+
+    window.onload = initChat;
   </script>
 </body>
 </html>
