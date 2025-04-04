@@ -4,7 +4,21 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Interview LifeBook</title>
+
+  <!-- jsPDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <!-- Supabase init -->
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js'
+
+    const supabase = createClient(
+      'https://qgmxclxahaqnvvxhgcms.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnbXhjbHhhaGFxbnZ2eGhnY21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM3OTYxODYsImV4cCI6MjA1OTM3MjE4Nn0.PhMpyFo9ZRgtLHdRyo6MXNjFNFy5WkH8LeqWnPJJCIE'
+    );
+    window.supabase = supabase;
+  </script>
+
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -93,6 +107,7 @@
   </div>
 
   <script>
+    const supabase = window.supabase;
     let historique = [];
     let questionIndex = 0;
     let recognition;
@@ -174,19 +189,26 @@
       doc.save("LifeBook.pdf");
     }
 
-    document.getElementById("userInput").addEventListener("keypress", function (e) {
-      if (e.key === "Enter") {
-        sendMessage();
+    async function sauvegarder() {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (!session || sessionError) {
+        alert("Non connecté.");
+        return;
       }
-    });
-    
-async function sauvegarder() {
-  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-  if (!session || sessionError) {
-    alert("Non connecté.");
-    return;
-  }
-  
+
+      const user = session.user;
+      const { error } = await supabase
+        .from('responses')
+        .insert([{ user_id: user.id, content: historique }]);
+
+      if (error) {
+        console.error("Erreur Supabase :", error);
+        alert("Erreur lors de la sauvegarde.");
+      } else {
+        alert("Interview sauvegardée avec succès !");
+      }
+    }
+
     async function initChat() {
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -209,23 +231,6 @@ async function sauvegarder() {
         audio.play();
       });
     }
-
-  const user = session.user;
-
-  const { error } = await supabase
-    .from('responses')
-    .insert([{
-      user_id: user.id,
-      content: historique
-    }]);
-
-  if (error) {
-    console.error("Erreur Supabase :", error);
-    alert("Erreur lors de la sauvegarde.");
-  } else {
-    alert("Interview sauvegardée avec succès !");
-  }
-}
 
     function toggleRecording() {
       const button = document.getElementById("speechButton");
@@ -262,6 +267,10 @@ async function sauvegarder() {
         recording = false;
       }
     }
+
+    document.getElementById("userInput").addEventListener("keypress", function (e) {
+      if (e.key === "Enter") sendMessage();
+    });
 
     window.onload = initChat;
   </script>
