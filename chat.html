@@ -83,7 +83,6 @@
 
     let messages = [systemPrompt];
 
-    // Message d'accueil
     addMessage("Bonjour et bienvenue dans LifeBook. Pour commencer : Où êtes-vous né(e) ?", "bot");
 
     function addMessage(text, sender) {
@@ -109,15 +108,23 @@
           headers: {
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({ messages })
+          body: JSON.stringify({ messages: messages })
         });
 
         const data = await response.json();
-        const botReply = data.reply || "Désolé, une erreur est survenue.";
-        addMessage(botReply, "bot");
-        messages.push({ role: "assistant", content: botReply });
+
+        if (!response.ok) {
+          console.error("Erreur serveur :", data);
+          addMessage("Erreur côté serveur : " + (data.detail || data.message), "bot");
+          return;
+        }
+
+        addMessage(data.reply, "bot");
+        messages.push({ role: "assistant", content: data.reply });
+
       } catch (error) {
-        addMessage("Erreur lors de la communication avec le serveur.", "bot");
+        console.error("Erreur réseau/fetch :", error);
+        addMessage("Erreur réseau : " + error.message, "bot");
       }
     }
   </script>
