@@ -85,7 +85,7 @@
       <button onclick="genererLivre()">Terminer et générer</button>
     </div>
     <div style="margin-top:20px">
-      <button id="speechButton" onclick="toggleRecording()">🎧 Parler</button>
+      <button id="speechButton" onclick="toggleRecording()">🎙️ Parler</button>
       <div id="waveform"></div>
     </div>
   </div>
@@ -124,22 +124,18 @@
 
       const data = await response.json();
       const botText = data.reply;
+
       afficher("LifeBook", botText, "bot");
       historique.push({ role: "assistant", content: botText });
       questionIndex++;
       miseAJourProgression();
 
-      // Lecture audio via API OpenAI (Nova)
-      const voiceRes = await fetch("/api/voice", {
+      // Synthèse vocale appelée sans attendre (parallèle)
+      fetch("/api/voice", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: botText })
       });
-
-      const blob = await voiceRes.blob();
-      const audioUrl = URL.createObjectURL(blob);
-      const audio = new Audio(audioUrl);
-      audio.play();
     }
 
     function passerQuestion() {
@@ -190,16 +186,11 @@
       afficher("LifeBook", data.reply, "bot");
       historique.push({ role: "assistant", content: data.reply });
 
-      const voiceRes = await fetch("/api/voice", {
+      fetch("/api/voice", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: data.reply })
       });
-
-      const blob = await voiceRes.blob();
-      const audioUrl = URL.createObjectURL(blob);
-      const audio = new Audio(audioUrl);
-      audio.play();
     }
 
     function toggleRecording() {
@@ -218,14 +209,14 @@
           const result = event.results[0][0].transcript;
           document.getElementById("userInput").value = result;
           waveform.style.display = "none";
-          button.textContent = "🎧 Parler";
+          button.textContent = "🎙️ Parler";
           recording = false;
           sendMessage();
         };
 
         recognition.onerror = function () {
           waveform.style.display = "none";
-          button.textContent = "🎧 Parler";
+          button.textContent = "🎙️ Parler";
           recording = false;
         };
 
@@ -233,7 +224,7 @@
       } else {
         recognition.stop();
         waveform.style.display = "none";
-        button.textContent = "🎧 Parler";
+        button.textContent = "🎙️ Parler";
         recording = false;
       }
     }
