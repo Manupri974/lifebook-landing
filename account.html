@@ -41,9 +41,8 @@
     }
     a.continuer {
       color: #a347ba;
-      text-decoration: none;
       font-weight: bold;
-      margin-left: 10px;
+      text-decoration: none;
     }
     a.continuer:hover {
       text-decoration: underline;
@@ -92,7 +91,7 @@
     userEmail.textContent = user.email
 
     // Charger les livres en cours (table responses)
-    const { data, error: fetchError } = await supabase
+    const { data: responses, error: fetchError } = await supabase
       .from('responses')
       .select('*')
       .eq('user_id', user.id)
@@ -100,19 +99,26 @@
 
     if (fetchError) {
       booksDiv.innerHTML = "<p>Erreur lors du chargement des réponses.</p>"
+      console.error(fetchError)
       return
     }
 
-    if (data.length === 0) {
+    if (!responses || responses.length === 0) {
       booksDiv.innerHTML = "<p>Aucun livre en cours pour le moment.</p>"
     } else {
-      booksDiv.innerHTML = "<ul>" + data.map(r => `
-        <li>
-          📘 <strong>Date :</strong> ${new Date(r.created_at).toLocaleDateString()} – 
-          <strong>Réponses :</strong> ${r.content.length} questions – 
-          <a class="continuer" href="chat.html?id=${r.id}">🔁 Continuer</a>
-        </li>
-      `).join('') + "</ul>"
+      const list = responses.map(r => {
+        const nbQuestions = Array.isArray(r.content) ? r.content.filter(m => m.role === "user").length : 0;
+        const date = new Date(r.created_at).toLocaleDateString()
+        return `
+          <li>
+            📘 <strong>Date :</strong> ${date} – 
+            <strong>Réponses :</strong> ${nbQuestions} questions – 
+            <a class="continuer" href="chat.html?id=${r.id}">🔁 Continuer</a>
+          </li>
+        `;
+      }).join("")
+
+      booksDiv.innerHTML = `<ul>${list}</ul>`
     }
   }
 
