@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mon compte – LifeBook</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: #f9f2fc;
+      color: #333;
+    }
+    header {
+      background: white;
+      padding: 20px 40px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    h1 {
+      color: #a347ba;
+    }
+    .container {
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .book-item {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+    }
+    .logout-btn {
+      margin-top: 20px;
+      background: #a347ba;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Mon compte</h1>
+  </header>
+  <div class="container">
+    <p id="user-info">Chargement...</p>
+    <h2>Mes interviews sauvegardées</h2>
+    <div id="saved-books"></div>
+    <button class="logout-btn" onclick="logout()">Se déconnecter</button>
+  </div>
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js'
+
+    const supabase = createClient(
+      'https://qgmxclxahaqnvvxhgcms.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnbXhjbHhhaGFxbnZ2eGhnY21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM3OTYxODYsImV4cCI6MjA1OTM3MjE4Nn0.PhMpyFo9ZRgtLHdRyo6MXNjFNFy5WkH8LeqWnPJJCIE'
+    );
+
+    const userInfo = document.getElementById('user-info');
+    const savedBooks = document.getElementById('saved-books');
+
+    async function fetchAccount() {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (!session) return location.href = "/auth.html";
+      const user = session.user;
+      userInfo.textContent = `Connecté en tant que : ${user.email}`;
+
+      const { data, error: fetchError } = await supabase
+        .from('interviews')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false });
+
+      if (fetchError || !data.length) {
+        savedBooks.textContent = "Aucune sauvegarde disponible.";
+        return;
+      }
+      data.forEach(entry => {
+        const div = document.createElement('div');
+        div.className = 'book-item';
+        div.textContent = `Sauvegarde du ${new Date(entry.updated_at).toLocaleDateString()} (${entry.data.length} caractères)`;
+        savedBooks.appendChild(div);
+      });
+    }
+
+    async function logout() {
+      await supabase.auth.signOut();
+      location.href = "/index.html";
+    }
+
+    fetchAccount();
+  </script>
+</body>
+</html>
