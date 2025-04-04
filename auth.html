@@ -1,68 +1,96 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Connexion - LifeBook</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <meta charset="UTF-8">
+  <title>Connexion à LifeBook</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #f7f0fa;
-      color: #333;
+      font-family: 'Inter', sans-serif;
+      background-color: #f9f1fb;
       display: flex;
       align-items: center;
       justify-content: center;
       height: 100vh;
       margin: 0;
     }
-    #auth-container {
+
+    .container {
       background: white;
       padding: 40px;
       border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.05);
-      width: 100%;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.1);
       max-width: 400px;
+      width: 90%;
       text-align: center;
     }
-    input, button {
+
+    h2 {
+      color: #a347ba;
+      margin-bottom: 20px;
+    }
+
+    input {
       padding: 10px;
       width: 100%;
-      margin-top: 10px;
-      border: 1px solid #ccc;
+      margin-bottom: 20px;
       border-radius: 6px;
-      font-size: 16px;
+      border: 1px solid #ccc;
+      font-size: 1em;
     }
+
     button {
-      background: #a347ba;
+      padding: 12px 20px;
+      background-color: #a347ba;
       color: white;
-      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      font-size: 1em;
       cursor: pointer;
+      width: 100%;
+    }
+
+    button:hover {
+      background-color: #912e9c;
+    }
+
+    #status {
+      margin-top: 15px;
+      font-size: 0.9em;
+      color: #444;
     }
   </style>
 </head>
 <body>
-  <div id="auth-container">
+
+  <div class="container">
     <h2>Connexion à LifeBook</h2>
-    <input type="email" id="email" placeholder="Adresse email" />
-    <button onclick="login()">Se connecter / S'inscrire</button>
-    <p style="margin-top: 20px; font-size: 0.9em;">Vous recevrez un lien magique dans votre boîte mail.</p>
+    <input type="email" id="email" placeholder="Votre adresse email" />
+    <button id="magicLink">Se connecter / S'inscrire</button>
+    <p id="status"></p>
   </div>
 
-  <script>
-    const SUPABASE_URL = 'https://qgmxclxahaqnvvxhgcms.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnbXhjbHhhaGFxbnZ2eGhnY21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM3OTYxODYsImV4cCI6MjA1OTM3MjE4Nn0.PhMpyFo9ZRgtLHdRyo6MXNjFNFy5WkH8LeqWnPJJCIE';
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js'
 
-    async function login() {
-      const email = document.getElementById('email').value;
-      const { error } = await supabase.auth.signInWithOtp({ email });
-      if (error) {
-        alert('Erreur : ' + error.message);
-      } else {
-        alert('Regarde dans ta boîte mail, un lien magique t’a été envoyé.');
+    const supabase = createClient(
+      'https://qgmxclxahaqnvvxhgcms.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnbXhjbHhhaGFxbnZ2eGhnY21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM3OTYxODYsImV4cCI6MjA1OTM3MjE4Nn0.PhMpyFo9ZRgtLHdRyo6MXNjFNFy5WkH8LeqWnPJJCIE'
+    )
+
+    document.getElementById('magicLink').addEventListener('click', async () => {
+      const email = document.getElementById('email').value.trim()
+
+      if (!email) {
+        document.getElementById('status').textContent = "Veuillez entrer une adresse email valide."
+        return
       }
-    }
+
+      const { error } = await supabase.auth.signInWithOtp({ email })
+
+      document.getElementById('status').textContent = error
+        ? "Erreur : " + error.message
+        : "Un lien magique a été envoyé à votre adresse email."
+    })
   </script>
 </body>
 </html>
