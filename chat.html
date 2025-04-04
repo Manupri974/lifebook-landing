@@ -201,6 +201,29 @@
         audio.play();
       });
     }
+async function sauvegarder() {
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  if (!session || sessionError) {
+    alert("Non connecté.");
+    return;
+  }
+
+  const user = session.user;
+
+  const { error } = await supabase
+    .from('responses')
+    .insert([{
+      user_id: user.id,
+      content: historique
+    }]);
+
+  if (error) {
+    console.error("Erreur Supabase :", error);
+    alert("Erreur lors de la sauvegarde.");
+  } else {
+    alert("Interview sauvegardée avec succès !");
+  }
+}
 
     function toggleRecording() {
       const button = document.getElementById("speechButton");
