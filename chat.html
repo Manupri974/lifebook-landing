@@ -59,10 +59,18 @@
     }
     #waveform {
       width: 100%;
-      height: 30px;
-      background: repeating-linear-gradient(90deg, #a347ba, #a347ba 2px, #fff 2px, #fff 4px);
+      height: 6px;
+      background: linear-gradient(90deg, #a347ba 50%, #fff 50%);
+      background-size: 20px 100%;
+      background-repeat: repeat-x;
+      animation: wave 1s linear infinite;
       display: none;
       margin: 10px 0;
+      border-radius: 4px;
+    }
+    @keyframes wave {
+      0% { background-position: 0 0; }
+      100% { background-position: 20px 0; }
     }
   </style>
 </head>
@@ -77,8 +85,7 @@
       <button onclick="genererLivre()">Terminer et générer</button>
     </div>
     <div style="margin-top:20px">
-      <button onclick="startRecording()">🎙️ Parler</button>
-      <button onclick="stopRecording()">⏹️ Stop</button>
+      <button id="speechButton" onclick="toggleRecording()">🎙️ Parler</button>
       <div id="waveform"></div>
     </div>
   </div>
@@ -87,6 +94,7 @@
     let historique = [];
     let questionIndex = 0;
     let recognition;
+    let recording = false;
 
     function afficher(auteur, texte, classe) {
       const msg = document.createElement("div");
@@ -121,9 +129,12 @@
       questionIndex++;
       miseAJourProgression();
 
-      const utterance = new SpeechSynthesisUtterance(botText);
-      utterance.lang = 'fr-FR';
-      speechSynthesis.speak(utterance);
+      // 🔊 Appel à l'API OpenAI pour synthèse vocale avec voix Nova (à ajouter côté backend)
+      await fetch("/api/voice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: botText })
+      });
     }
 
     function passerQuestion() {
@@ -174,28 +185,46 @@
       afficher("LifeBook", data.reply, "bot");
       historique.push({ role: "assistant", content: data.reply });
 
-      const utterance = new SpeechSynthesisUtterance(data.reply);
-      utterance.lang = 'fr-FR';
-      speechSynthesis.speak(utterance);
+      await fetch("/api/voice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: data.reply })
+      });
     }
 
-    function startRecording() {
+    function toggleRecording() {
+      const button = document.getElementById("speechButton");
       const waveform = document.getElementById("waveform");
-      waveform.style.display = "block";
-      recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-      recognition.lang = "fr-FR";
-      recognition.interimResults = false;
-      recognition.onresult = function (event) {
-        const result = event.results[0][0].transcript;
-        document.getElementById("userInput").value = result;
-      };
-      recognition.start();
-    }
 
-    function stopRecording() {
-      if (recognition) {
+      if (!recording) {
+        recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = "fr-FR";
+        recognition.interimResults = false;
+        waveform.style.display = "block";
+        button.textContent = "🛑 Stop";
+        recording = true;
+
+        recognition.onresult = function (event) {
+          const result = event.results[0][0].transcript;
+          document.getElementById("userInput").value = result;
+          waveform.style.display = "none";
+          button.textContent = "🎙️ Parler";
+          recording = false;
+          sendMessage();
+        };
+
+        recognition.onerror = function () {
+          waveform.style.display = "none";
+          button.textContent = "🎙️ Parler";
+          recording = false;
+        };
+
+        recognition.start();
+      } else {
         recognition.stop();
-        document.getElementById("waveform").style.display = "none";
+        waveform.style.display = "none";
+        button.textContent = "🎙️ Parler";
+        recording = false;
       }
     }
 
