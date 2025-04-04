@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Interview LifeBook</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -130,7 +131,6 @@
       questionIndex++;
       miseAJourProgression();
 
-      // Lecture de la voix avec réponse
       fetch("/api/voice", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -166,12 +166,11 @@
       });
 
       const data = await response.json();
-      const blob = new Blob([data.reply], { type: "application/pdf" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "LifeBook.pdf";
-      a.click();
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const lines = doc.splitTextToSize(data.reply, 180);
+      doc.text(lines, 15, 20);
+      doc.save("LifeBook.pdf");
     }
 
     document.getElementById("userInput").addEventListener("keypress", function (e) {
