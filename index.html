@@ -118,7 +118,7 @@
       <a href="#accueil">Accueil</a>
       <a href="#fonctionnement">Fonctionnement</a>
       <a href="#tarifs">Tarifs</a>
-      <a href="#commencer">Commencer</a>
+      <a href="#commencer" id="btnCommencer">Commencer</a>
       <a href="#connexion">Connexion</a>
     </nav>
   </header>
@@ -127,7 +127,7 @@
     <h2>Offrez un livre de souvenirs</h2>
     <p>LifeBook vous aide à interviewer vos proches et transforme leurs histoires en un e-book biographique, à garder ou à offrir.</p>
     <div class="cta">
-      <a href="chat.html">Commencer maintenant</a>
+      <a href="#" id="btnCommencer">Commencer maintenant</a>
     </div>
   </section>
 
@@ -174,9 +174,9 @@
 
   <section class="section" id="commencer">
     <h2>Commencer l'interview</h2>
-    <p style="text-align:center">Bientôt disponible. En attendant, créez un compte pour être informé du lancement.</p>
+    <p style="text-align:center">Connectez-vous pour lancer votre interview ou en créer une nouvelle.</p>
     <div class="cta" style="text-align:center;">
-      <a href="#connexion">Créer un compte</a>
+      <a href="#" id="btnCommencer">Créer un compte ou se connecter</a>
     </div>
   </section>
 
@@ -184,5 +184,28 @@
     © LifeBook 2025 • hello@lifebook.fr • Tous droits réservés
   </footer>
 
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js'
+
+    const supabase = createClient(
+      'https://qgmxclxahaqnvvxhgcms.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnbXhjbHhhaGFxbnZ2eGhnY21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM3OTYxODYsImV4cCI6MjA1OTM3MjE4Nn0.PhMpyFo9ZRgtLHdRyo6MXNjFNFy5WkH8LeqWnPJJCIE'
+    )
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      const boutonCommencer = document.querySelectorAll('#btnCommencer')
+      boutonCommencer.forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.preventDefault()
+          const { data: { session } } = await supabase.auth.getSession()
+          if (session) {
+            window.location.href = "/chat.html"
+          } else {
+            window.location.href = "/auth.html"
+          }
+        })
+      })
+    })
+  </script>
 </body>
 </html>
