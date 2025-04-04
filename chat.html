@@ -108,10 +108,20 @@ Toujours une seule question par réponse.`
         addMessage('bot', reply);
         conversation.push({ role: 'assistant', content: reply });
 
-        if (!isMuted && 'speechSynthesis' in window) {
-          const utterance = new SpeechSynthesisUtterance(reply);
-          utterance.lang = 'fr-FR';
-          speechSynthesis.speak(utterance);
+        if (!isMuted) {
+          try {
+            const audioRes = await fetch('/api/voice', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ text: reply })
+            });
+            const audioBlob = await audioRes.blob();
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const audio = new Audio(audioUrl);
+            audio.play();
+          } catch (err) {
+            console.error('Erreur de synthèse vocale premium :', err);
+          }
         }
       } catch (error) {
         addMessage('bot', "Désolé, une erreur est survenue. Réessayez plus tard.");
@@ -207,10 +217,20 @@ Toujours une seule question par réponse.`
         addMessage('bot', reply);
         conversation.push({ role: 'assistant', content: reply });
 
-        if (!isMuted && 'speechSynthesis' in window) {
-          const utterance = new SpeechSynthesisUtterance(reply);
-          utterance.lang = 'fr-FR';
-          speechSynthesis.speak(utterance);
+        if (!isMuted) {
+          try {
+            const audioRes = await fetch('/api/voice', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ text: reply })
+            });
+            const audioBlob = await audioRes.blob();
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const audio = new Audio(audioUrl);
+            audio.play();
+          } catch (err) {
+            console.error('Erreur de synthèse vocale premium :', err);
+          }
         }
       } catch (error) {
         addMessage('bot', "Erreur au démarrage du chat.");
