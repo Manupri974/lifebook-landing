@@ -8,8 +8,8 @@
   <!-- jsPDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-  <!-- Supabase -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Supabase v1 (compatible avec script classique) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.6"></script>
 
   <style>
     body {
@@ -100,7 +100,7 @@
   </div>
 
   <script>
-    const supabase = supabasejs.createClient(
+    const supabase = supabase.createClient(
       'https://qgmxclxahaqnvvxhgcms.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnbXhjbHhhaGFxbnZ2eGhnY21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM3OTYxODYsImV4cCI6MjA1OTM3MjE4Nn0.PhMpyFo9ZRgtLHdRyo6MXNjFNFy5WkH8LeqWnPJJCIE'
     );
@@ -187,9 +187,8 @@
     }
 
     async function sauvegarder() {
-      console.log("Sauvegarde lancée...");
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      console.log("Session :", session);
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      const session = sessionData.session;
       if (!session || sessionError) {
         afficherMessage("❌ Non connecté.", "red");
         return;
