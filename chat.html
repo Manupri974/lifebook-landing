@@ -100,6 +100,7 @@
       <button onclick="genererLivre()">Terminer et générer</button>
       <button onclick="sauvegarder()">💾 Sauvegarder</button>
     </div>
+    <div id="messageStatus" style="margin-top: 10px; min-height: 20px;"></div>
     <div style="margin-top:20px">
       <button id="speechButton" onclick="toggleRecording()">🎙️ Parler</button>
       <div id="waveform"></div>
@@ -192,7 +193,7 @@
     async function sauvegarder() {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       if (!session || sessionError) {
-        alert("Non connecté.");
+        afficherMessage("❌ Non connecté.", "red");
         return;
       }
 
@@ -203,10 +204,18 @@
 
       if (error) {
         console.error("Erreur Supabase :", error);
-        alert("Erreur lors de la sauvegarde.");
+        afficherMessage("❌ Erreur lors de la sauvegarde.", "red");
       } else {
-        alert("Interview sauvegardée avec succès !");
+        afficherMessage("✅ Interview sauvegardée avec succès !", "green");
       }
+    }
+
+    function afficherMessage(texte, couleur) {
+      const msgDiv = document.getElementById("messageStatus");
+      msgDiv.textContent = texte;
+      msgDiv.style.color = couleur;
+      msgDiv.style.fontWeight = "bold";
+      setTimeout(() => { msgDiv.textContent = ""; }, 4000);
     }
 
     async function initChat() {
