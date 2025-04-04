@@ -273,11 +273,12 @@
         .from("responses")
         .insert([{ user_id: user.id, content: window.historique }]);
 
-      if (insertError) {
-        console.error(insertError);
-        status.textContent = "❌ Erreur lors de la sauvegarde.";
-        status.style.color = "red";
-      } else {
+    if (insertError) {
+  console.error("Erreur Supabase :", insertError);
+  status.textContent = "❌ Erreur : " + insertError.message;
+  status.style.color = "red";
+}
+    else {
         status.textContent = "✅ Interview sauvegardée avec succès !";
         status.style.color = "green";
       }
