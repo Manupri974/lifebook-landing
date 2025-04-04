@@ -71,6 +71,44 @@
     const userInput = document.getElementById('userInput');
     let conversation = [];
 
+    const systemPrompt = {
+      role: 'system',
+      content: `Tu es un interviewer humain, chaleureux, bienveillant et curieux. Tu parles à quelqu’un pour écrire un livre de souvenirs.
+Ton rôle est de creuser chaque réponse : tu réagis avec empathie, tu t’étonnes parfois, tu souris, tu t’émerveilles, tu poses une seule question à la fois pour approfondir.
+Tu écris comme dans une vraie conversation parlée, jamais comme un robot.
+Tu ne poses pas juste des questions froides : tu commentes, tu montres que tu écoutes. 
+Ton ton est léger, humain, parfois amusé. Tu utilises un langage simple mais vivant.
+Toujours une seule question par réponse.`
+    };
+
+    async function sendMessage() {
+      const text = userInput.value.trim();
+      if (!text) return;
+
+      addMessage('user', text);
+      conversation.push({ role: 'user', content: text });
+      userInput.value = '';
+
+      const messages = [systemPrompt, ...conversation];
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages, model: 'gpt-3.5-turbo' })
+        });
+
+        const data = await res.json();
+        const reply = data.reply || "(erreur lors de la réponse)";
+
+        addMessage('bot', reply);
+        conversation.push({ role: 'assistant', content: reply });
+      } catch (error) {
+        addMessage('bot', "Désolé, une erreur est survenue. Réessayez plus tard.");
+        console.error(error);
+      }
+    }
+
     function addMessage(from, text) {
       const msg = document.createElement('div');
       msg.className = 'message ' + (from === 'bot' ? 'bot' : 'user');
@@ -79,39 +117,22 @@
       chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    function sendMessage() {
-      const text = userInput.value.trim();
-      if (!text) return;
-      addMessage('user', text);
-      conversation.push({ role: 'user', content: text });
-      userInput.value = '';
-      getNextBotQuestion();
-    }
-
-    async function getNextBotQuestion() {
-      const prompt = conversation.length === 1
-        ? "Parfait. Quel est ton tout premier souvenir marquant ?"
-        : conversation.length === 3
-        ? "Y avait-il quelqu'un de spécial qui t'accompagnait à cette période ?"
-        : "Merci ! Continue à me raconter ce souvenir en détail.";
-      addMessage('bot', prompt);
-      conversation.push({ role: 'assistant', content: prompt });
-    }
-
     async function generateNarrativePdf() {
       addMessage('bot', "Génération du livre en cours...");
-      const systemPrompt = {
-        role: 'system',
-        content: "Tu es un écrivain biographique. Rédige un récit fluide, littéraire et émouvant à partir de ces réponses."
-      };
-
-      const messages = [systemPrompt, ...conversation];
+      const messages = [
+        {
+          role: 'system',
+          content: "Tu es un écrivain biographique. Rédige un récit fluide, littéraire et émouvant à partir de ces réponses."
+        },
+        ...conversation
+      ];
 
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages })
+        body: JSON.stringify({ messages, model: 'gpt-4' })
       });
+
       const data = await res.json();
 
       const { jsPDF } = window.jspdf;
@@ -121,9 +142,29 @@
       doc.save('lifebook.pdf');
     }
 
-    // Start message
-    addMessage('bot', "Bonjour et bienvenue dans LifeBook. Pour commencer : Où êtes-vous né(e) ?");
-    conversation.push({ role: 'assistant', content: "Bonjour et bienvenue dans LifeBook. Pour commencer : Où êtes-vous né(e) ?" });
+    // Démarrage : première question via API
+    async function initChat() {
+      const messages = [systemPrompt];
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages, model: 'gpt-3.5-turbo' })
+        });
+
+        const data = await res.json();
+        const reply = data.reply || "(erreur lors de la réponse initiale)";
+
+        addMessage('bot', reply);
+        conversation.push({ role: 'assistant', content: reply });
+      } catch (error) {
+        addMessage('bot', "Erreur au démarrage du chat.");
+        console.error(error);
+      }
+    }
+
+    initChat();
   </script>
 </body>
 </html>
