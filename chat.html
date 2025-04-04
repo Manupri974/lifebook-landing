@@ -57,6 +57,13 @@
     button:hover {
       background: #912ca3;
     }
+    #waveform {
+      width: 100%;
+      height: 30px;
+      background: repeating-linear-gradient(90deg, #a347ba, #a347ba 2px, #fff 2px, #fff 4px);
+      display: none;
+      margin: 10px 0;
+    }
   </style>
 </head>
 <body>
@@ -69,11 +76,17 @@
       <button onclick="passerQuestion()">Passer à la question suivante</button>
       <button onclick="genererLivre()">Terminer et générer</button>
     </div>
+    <div style="margin-top:20px">
+      <button onclick="startRecording()">🎙️ Parler</button>
+      <button onclick="stopRecording()">⏹️ Stop</button>
+      <div id="waveform"></div>
+    </div>
   </div>
 
   <script>
     let historique = [];
     let questionIndex = 0;
+    let recognition;
 
     function afficher(auteur, texte, classe) {
       const msg = document.createElement("div");
@@ -107,6 +120,10 @@
       historique.push({ role: "assistant", content: botText });
       questionIndex++;
       miseAJourProgression();
+
+      const utterance = new SpeechSynthesisUtterance(botText);
+      utterance.lang = 'fr-FR';
+      speechSynthesis.speak(utterance);
     }
 
     function passerQuestion() {
@@ -156,6 +173,30 @@
       const data = await response.json();
       afficher("LifeBook", data.reply, "bot");
       historique.push({ role: "assistant", content: data.reply });
+
+      const utterance = new SpeechSynthesisUtterance(data.reply);
+      utterance.lang = 'fr-FR';
+      speechSynthesis.speak(utterance);
+    }
+
+    function startRecording() {
+      const waveform = document.getElementById("waveform");
+      waveform.style.display = "block";
+      recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = "fr-FR";
+      recognition.interimResults = false;
+      recognition.onresult = function (event) {
+        const result = event.results[0][0].transcript;
+        document.getElementById("userInput").value = result;
+      };
+      recognition.start();
+    }
+
+    function stopRecording() {
+      if (recognition) {
+        recognition.stop();
+        document.getElementById("waveform").style.display = "none";
+      }
     }
 
     window.onload = initChat;
