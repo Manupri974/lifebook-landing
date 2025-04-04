@@ -2,82 +2,106 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>LifeBook</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LifeBook – Le livre de vos souvenirs</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
   <style>
     body {
       margin: 0;
       font-family: 'Inter', sans-serif;
-      background: linear-gradient(135deg, #f4b6c2, #c2d3f4);
-      color: #2c2c2c;
+      background: linear-gradient(135deg, #f6d5f7, #fbe9d7);
+      color: #333;
     }
     header {
-      text-align: center;
-      padding: 60px 20px 30px;
-      color: white;
+      position: sticky;
+      top: 0;
+      background: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 40px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      z-index: 10;
     }
     header h1 {
-      font-size: 3em;
-      margin-bottom: 10px;
+      margin: 0;
+      color: #a347ba;
+      font-size: 1.8em;
     }
-    header p {
+    nav a {
+      margin-left: 20px;
+      text-decoration: none;
+      color: #555;
+      font-weight: 500;
+    }
+    nav a:hover {
+      color: #a347ba;
+    }
+    .hero {
+      text-align: center;
+      padding: 80px 20px 40px;
+    }
+    .hero h2 {
+      font-size: 2.8em;
+      margin-bottom: 20px;
+      color: #a347ba;
+    }
+    .hero p {
       font-size: 1.2em;
       max-width: 600px;
       margin: auto;
+      color: #444;
+    }
+    .cta {
+      margin-top: 30px;
+    }
+    .cta a {
+      background: #a347ba;
+      color: white;
+      padding: 15px 30px;
+      border-radius: 30px;
+      text-decoration: none;
+      font-weight: bold;
     }
     .section {
       max-width: 1000px;
       margin: 60px auto;
       padding: 0 20px;
     }
-    .steps {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 30px;
-      justify-content: space-between;
-    }
-    .step {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      flex: 1;
-      min-width: 250px;
-      padding: 20px;
-    }
-    .step strong {
-      font-size: 1.5em;
-      color: #5f3dc4;
-    }
-    .pricing {
+    .steps, .pricing {
       display: flex;
       flex-wrap: wrap;
       gap: 30px;
       justify-content: center;
+      margin-top: 30px;
     }
-    .price-card {
+    .card {
       background: white;
-      border-radius: 12px;
       padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.06);
+      flex: 1;
+      min-width: 250px;
+      max-width: 300px;
       text-align: center;
-      width: 200px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
-    footer {
-      background: #fff;
-      color: #999;
-      text-align: center;
-      padding: 40px 20px;
-      margin-top: 60px;
-      font-size: 0.9em;
+    .card h3 {
+      margin-top: 0;
+      color: #a347ba;
     }
-    .family-photo {
+    .photo {
       width: 100%;
       max-width: 900px;
-      margin: 40px auto;
       border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      margin: 40px auto;
       display: block;
+    }
+    footer {
+      text-align: center;
+      font-size: 0.9em;
+      padding: 40px 20px;
+      color: #777;
+      background: #f8f8f8;
     }
   </style>
 </head>
@@ -85,49 +109,71 @@
 
   <header>
     <h1>LifeBook</h1>
-    <p>Transformez les souvenirs d’un parent ou d’un proche en un livre biographique émouvant. Posez des questions, laissez l’IA écrire l’histoire.</p>
+    <nav>
+      <a href="#accueil">Accueil</a>
+      <a href="#fonctionnement">Fonctionnement</a>
+      <a href="#tarifs">Tarifs</a>
+      <a href="#commencer">Commencer</a>
+      <a href="#connexion">Connexion</a>
+    </nav>
   </header>
 
-  <img src="https://images.unsplash.com/photo-1607746882042-944635dfe10e?auto=format&fit=crop&w=1000&q=80" alt="Famille" class="family-photo">
+  <section class="hero" id="accueil">
+    <h2>Offrez un livre de souvenirs</h2>
+    <p>LifeBook vous aide à interviewer vos proches et transforme leurs histoires en un e-book biographique, à garder ou à offrir.</p>
+    <div class="cta">
+      <a href="#commencer">Commencer maintenant</a>
+    </div>
+  </section>
 
-  <div class="section">
+  <img class="photo" src="https://images.unsplash.com/photo-1616692473237-5bb3ebd4205f?auto=format&fit=crop&w=1200&q=80" alt="Famille heureuse">
+
+  <section class="section" id="fonctionnement">
     <h2>Comment ça marche ?</h2>
     <div class="steps">
-      <div class="step">
-        <strong>1.</strong><br/>
-        Interviewez un proche via une interface chat simple.
+      <div class="card">
+        <h3>1. Interview</h3>
+        <p>Posez vos questions à un proche via une interface de chat simple et naturelle.</p>
       </div>
-      <div class="step">
-        <strong>2.</strong><br/>
-        L’IA transforme la discussion en un récit fluide.
+      <div class="card">
+        <h3>2. Rédaction</h3>
+        <p>Notre IA transforme les réponses en un récit fluide et littéraire, fidèle à la voix de la personne.</p>
       </div>
-      <div class="step">
-        <strong>3.</strong><br/>
-        Téléchargez un e-book ou imprimez-le pour l’offrir.
+      <div class="card">
+        <h3>3. Création du livre</h3>
+        <p>Recevez un e-book que vous pouvez télécharger, imprimer ou offrir.</p>
       </div>
     </div>
-  </div>
+  </section>
 
-  <div class="section">
+  <section class="section" id="tarifs">
     <h2>Nos offres</h2>
     <div class="pricing">
-      <div class="price-card">
-        <h3>Gratuit</h3>
-        <p>Interview + e-book PDF simple</p>
+      <div class="card">
+        <h3>Gratuite</h3>
+        <p>Interview + e-book PDF simple<br/><strong>0 €</strong></p>
       </div>
-      <div class="price-card">
+      <div class="card">
         <h3>Premium</h3>
-        <p>9 €<br/>Mise en page élégante + couverture</p>
+        <p>Mise en page élégante, couverture personnalisée<br/><strong>9 €</strong></p>
       </div>
-      <div class="price-card">
+      <div class="card">
         <h3>Deluxe</h3>
-        <p>29 €<br/>Version imprimée envoyée chez vous</p>
+        <p>Version imprimée livrée chez vous<br/><strong>29 €</strong></p>
       </div>
     </div>
-  </div>
+  </section>
+
+  <section class="section" id="commencer">
+    <h2>Commencer l'interview</h2>
+    <p style="text-align:center">Bientôt disponible. En attendant, créez un compte pour être informé du lancement.</p>
+    <div class="cta" style="text-align:center;">
+      <a href="#connexion">Créer un compte</a>
+    </div>
+  </section>
 
   <footer>
-    © LifeBook 2025 — Tous droits réservés • hello@lifebook.fr
+    © LifeBook 2025 • hello@lifebook.fr • Tous droits réservés
   </footer>
 </body>
 </html>
