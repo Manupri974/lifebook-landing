@@ -90,7 +90,11 @@
     const user = session.user
     userEmail.textContent = user.email
 
-    // Charger les livres en cours (table responses)
+    // 🔍 DEBUG utilisateur connecté
+    console.log("👤 Utilisateur connecté :", user);
+    console.log("🔑 user.id =", user.id);
+
+    // Récupérer les livres enregistrés
     const { data: responses, error: fetchError } = await supabase
       .from('responses')
       .select('*')
@@ -99,8 +103,14 @@
 
     if (fetchError) {
       booksDiv.innerHTML = "<p>Erreur lors du chargement des réponses.</p>"
-      console.error(fetchError)
+      console.error("❌ Erreur fetch responses :", fetchError)
       return
+    }
+
+    // 🔍 DEBUG des réponses
+    console.log("📚 responses récupérées :", responses);
+    if (responses && responses.length > 0) {
+      console.log("🧾 Liste des user_id des réponses :", responses.map(r => r.user_id));
     }
 
     if (!responses || responses.length === 0) {
