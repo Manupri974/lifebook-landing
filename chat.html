@@ -320,6 +320,10 @@
     });
 
     window.onload = initChat;
+    // Assure les événements des boutons fonctionnent bien
+document.getElementById("speechButton").addEventListener("click", toggleRecording);
+document.querySelector("button[onclick='passerQuestion()']").addEventListener("click", passerQuestion);
+document.querySelector("button[onclick='genererLivre()']").addEventListener("click", genererLivre);
   </script>
 </body>
 </html>
