@@ -324,6 +324,12 @@
 document.getElementById("speechButton").addEventListener("click", toggleRecording);
 document.querySelector("button[onclick='passerQuestion()']").addEventListener("click", passerQuestion);
 document.querySelector("button[onclick='genererLivre()']").addEventListener("click", genererLivre);
+
+// ✅ Réactiver proprement les boutons désactivés dans le module
+window.toggleRecording = toggleRecording;
+window.passerQuestion = passerQuestion;
+window.genererLivre = genererLivre;
+window.sendMessage = sendMessage;
   </script>
 </body>
 </html>
