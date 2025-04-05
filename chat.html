@@ -85,14 +85,14 @@
     <div id="progression">Question 1 / 89</div>
     <input id="userInput" type="text" placeholder="Votre réponse..." />
     <div>
-      <button onclick="sendMessage()">Envoyer</button>
-      <button onclick="passerQuestion()">Passer à la question suivante</button>
-      <button onclick="genererLivre()">Terminer et générer</button>
+      <button id="sendBtn">Envoyer</button>
+      <button id="skipBtn">Passer à la question suivante</button>
+      <button id="generateBtn">Terminer et générer</button>
       <button id="saveButton">💾 Sauvegarder</button>
     </div>
     <div id="messageStatus"></div>
     <div style="margin-top:20px">
-      <button id="speechButton" onclick="toggleRecording()">🎙️ Parler</button>
+      <button id="speechButton">🎙️ Parler</button>
       <div id="waveform"></div>
     </div>
   </div>
@@ -103,10 +103,9 @@
     const supabase = createClient(
       'https://qgmxclxahaqnvvxhgcms.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnbXhjbHhhaGFxbnZ2eGhnY21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM3OTYxODYsImV4cCI6MjA1OTM3MjE4Nn0.PhMpyFo9ZRgtLHdRyo6MXNjFNFy5WkH8LeqWnPJJCIE'
-    )
+    );
 
     let historique = [];
-    let questionIndex = 0;
     let interviewId = null;
     let recognition;
     let recording = false;
@@ -152,11 +151,11 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: botText })
       })
-      .then(res => res.blob())
-      .then(blob => {
-        const audio = new Audio(URL.createObjectURL(blob));
-        audio.play();
-      });
+        .then(res => res.blob())
+        .then(blob => {
+          const audio = new Audio(URL.createObjectURL(blob));
+          audio.play();
+        });
     }
 
     function passerQuestion() {
@@ -232,15 +231,59 @@
       setTimeout(() => status.textContent = "", 3000);
     }
 
+    function toggleRecording() {
+      const button = document.getElementById("speechButton");
+      const waveform = document.getElementById("waveform");
+
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        alert("Reconnaissance vocale non supportée sur ce navigateur.");
+        return;
+      }
+
+      if (!recognition) {
+        recognition = new SpeechRecognition();
+        recognition.lang = "fr-FR";
+        recognition.interimResults = false;
+
+        recognition.onresult = function (event) {
+          const result = event.results[0][0].transcript;
+          document.getElementById("userInput").value = result;
+          waveform.style.display = "none";
+          button.textContent = "🎙️ Parler";
+          recording = false;
+          sendMessage();
+        };
+
+        recognition.onerror = function () {
+          waveform.style.display = "none";
+          button.textContent = "🎙️ Parler";
+          recording = false;
+        };
+      }
+
+      if (!recording) {
+        waveform.style.display = "block";
+        button.textContent = "🛑 Stop";
+        recording = true;
+        recognition.start();
+      } else {
+        recognition.stop();
+        waveform.style.display = "none";
+        button.textContent = "🎙️ Parler";
+        recording = false;
+      }
+    }
+
     async function initChat() {
       const params = new URLSearchParams(window.location.search);
       interviewId = params.get("id");
 
       if (interviewId) {
         const { data, error } = await supabase
-          .from('responses')
-          .select('content')
-          .eq('id', interviewId)
+          .from("responses")
+          .select("content")
+          .eq("id", interviewId)
           .single();
 
         if (error || !data) {
@@ -252,7 +295,6 @@
         historique.forEach(msg => {
           afficher(msg.role === "user" ? "Vous" : "LifeBook", msg.content, msg.role);
         });
-
         miseAJourProgression();
       } else {
         const response = await fetch("/api/chat", {
@@ -270,61 +312,25 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text: data.reply })
         })
-        .then(res => res.blob())
-        .then(blob => {
-          const audio = new Audio(URL.createObjectURL(blob));
-          audio.play();
-        });
+          .then(res => res.blob())
+          .then(blob => {
+            const audio = new Audio(URL.createObjectURL(blob));
+            audio.play();
+          });
       }
     }
 
-    function toggleRecording() {
-      const button = document.getElementById("speechButton");
-      const waveform = document.getElementById("waveform");
-
-      if (!recording) {
-        recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        recognition.lang = "fr-FR";
-        recognition.interimResults = false;
-        waveform.style.display = "block";
-        button.textContent = "🛑 Stop";
-        recording = true;
-
-        recognition.onresult = function (event) {
-          const result = event.results[0][0].transcript;
-          document.getElementById("userInput").value = result;
-          waveform.style.display = "none";
-          button.textContent = "🎙️ Parler";
-          recording = false;
-          sendMessage();
-        };
-
-        recognition.onerror = function () {
-          waveform.style.display = "none";
-          button.textContent = "🎙️ Parler";
-          recording = false;
-        };
-
-        recognition.start();
-      } else {
-        recognition.stop();
-        waveform.style.display = "none";
-        button.textContent = "🎙️ Parler";
-        recording = false;
-      }
-    }
-
+    // Lier les boutons
+    document.getElementById("sendBtn").addEventListener("click", sendMessage);
+    document.getElementById("skipBtn").addEventListener("click", passerQuestion);
+    document.getElementById("generateBtn").addEventListener("click", genererLivre);
     document.getElementById("saveButton").addEventListener("click", sauvegarder);
+    document.getElementById("speechButton").addEventListener("click", toggleRecording);
     document.getElementById("userInput").addEventListener("keypress", e => {
       if (e.key === "Enter") sendMessage();
     });
 
     window.onload = initChat;
-// ✅ Rendre les fonctions visibles pour les attributs onclick dans HTML
-window.sendMessage = sendMessage;
-window.passerQuestion = passerQuestion;
-window.genererLivre = genererLivre;
-window.toggleRecording = toggleRecording;
   </script>
 </body>
 </html>
