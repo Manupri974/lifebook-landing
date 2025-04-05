@@ -320,16 +320,336 @@
     });
 
     window.onload = initChat;
-    // Assure les événements des boutons fonctionnent bien
-document.getElementById("speechButton").addEventListener("click", toggleRecording);
-document.querySelector("button[onclick='passerQuestion()']").addEventListener("click", passerQuestion);
-document.querySelector("button[onclick='genererLivre()']").addEventListener("click", genererLivre);
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interview LifeBook</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      padding: 30px;
+      background: #fefefe;
+      color: #333;
+    }
+    #chat {
+      max-width: 700px;
+      margin: auto;
+    }
+    .message {
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 10px;
+    }
+    .bot {
+      background: #f3e8fa;
+      color: #5a2a82;
+    }
+    .user {
+      background: #e1f5e8;
+      color: #21543d;
+      text-align: right;
+    }
+    #progression {
+      margin-top: 10px;
+      font-size: 0.9em;
+      text-align: right;
+      color: #777;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    button {
+      padding: 10px 20px;
+      margin-top: 10px;
+      margin-right: 10px;
+      border: none;
+      border-radius: 6px;
+      background: #a347ba;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #912ca3;
+    }
+    #waveform {
+      width: 100%;
+      height: 6px;
+      background: linear-gradient(90deg, #a347ba 50%, #fff 50%);
+      background-size: 20px 100%;
+      background-repeat: repeat-x;
+      animation: wave 1s linear infinite;
+      display: none;
+      margin: 10px 0;
+      border-radius: 4px;
+    }
+    #messageStatus {
+      margin-top: 10px;
+      min-height: 20px;
+    }
+    @keyframes wave {
+      0% { background-position: 0 0; }
+      100% { background-position: 20px 0; }
+    }
+  </style>
+</head>
+<body>
+  <div id="chat">
+    <div id="messages"></div>
+    <div id="progression">Question 1 / 89</div>
+    <input id="userInput" type="text" placeholder="Votre réponse..." />
+    <div>
+      <button onclick="sendMessage()">Envoyer</button>
+      <button onclick="passerQuestion()">Passer à la question suivante</button>
+      <button onclick="genererLivre()">Terminer et générer</button>
+      <button id="saveButton">💾 Sauvegarder</button>
+    </div>
+    <div id="messageStatus"></div>
+    <div style="margin-top:20px">
+      <button id="speechButton" onclick="toggleRecording()">🎙️ Parler</button>
+      <div id="waveform"></div>
+    </div>
+  </div>
 
-// ✅ Réactiver proprement les boutons désactivés dans le module
-window.toggleRecording = toggleRecording;
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js'
+
+    const supabase = createClient(
+      'https://qgmxclxahaqnvvxhgcms.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnbXhjbHhhaGFxbnZ2eGhnY21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM3OTYxODYsImV4cCI6MjA1OTM3MjE4Nn0.PhMpyFo9ZRgtLHdRyo6MXNjFNFy5WkH8LeqWnPJJCIE'
+    )
+
+    let historique = [];
+    let questionIndex = 0;
+    let interviewId = null;
+    let recognition;
+    let recording = false;
+
+    const status = document.getElementById("messageStatus");
+
+    function afficher(auteur, texte, classe) {
+      const msg = document.createElement("div");
+      msg.className = "message " + classe;
+      msg.innerHTML = `<strong>${auteur} :</strong> ${texte}`;
+      document.getElementById("messages").appendChild(msg);
+      document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
+    }
+
+    function miseAJourProgression() {
+      const count = historique.filter(m => m.role === "user").length;
+      document.getElementById("progression").innerText = `Question ${count + 1} / 89`;
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById("userInput");
+      const text = input.value.trim();
+      if (!text) return;
+      afficher("Vous", text, "user");
+      historique.push({ role: "user", content: text });
+      input.value = "";
+
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: historique })
+      });
+
+      const data = await response.json();
+      const botText = data.reply;
+
+      afficher("LifeBook", botText, "bot");
+      historique.push({ role: "assistant", content: botText });
+      miseAJourProgression();
+
+      fetch("/api/voice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: botText })
+      })
+      .then(res => res.blob())
+      .then(blob => {
+        const audio = new Audio(URL.createObjectURL(blob));
+        audio.play();
+      });
+    }
+
+    function passerQuestion() {
+      historique.push({ role: "user", content: "passons" });
+      sendMessage();
+    }
+
+    async function genererLivre() {
+      const prompt = `Rédige un texte biographique littéraire à partir des réponses suivantes :\n\n${historique
+        .map(m => m.role === 'user' ? m.content : '')
+        .filter(Boolean)
+        .join('\n')}`;
+
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [
+            { role: "system", content: "Tu es un écrivain biographe. Transforme les réponses suivantes en une narration fluide, littéraire et émotive, dans l’ordre chronologique." },
+            { role: "user", content: prompt }
+          ]
+        })
+      });
+
+      const data = await response.json();
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const lines = doc.splitTextToSize(data.reply, 180);
+      doc.text(lines, 15, 20);
+      doc.save("LifeBook.pdf");
+    }
+
+    async function sauvegarder() {
+      status.textContent = "⏳ Sauvegarde en cours...";
+      status.style.color = "black";
+
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (!session || error) {
+        status.textContent = "❌ Non connecté.";
+        status.style.color = "red";
+        return;
+      }
+
+      const user = session.user;
+      let result;
+
+      if (interviewId) {
+        result = await supabase
+          .from("responses")
+          .update({ content: historique })
+          .eq("id", interviewId);
+      } else {
+        result = await supabase
+          .from("responses")
+          .insert([{ user_id: user.id, content: historique }])
+          .select("id")
+          .single();
+
+        if (result.data?.id) {
+          interviewId = result.data.id;
+          history.replaceState(null, "", `chat.html?id=${interviewId}`);
+        }
+      }
+
+      if (result.error) {
+        status.textContent = "❌ Erreur : " + result.error.message;
+        status.style.color = "red";
+      } else {
+        status.textContent = "✅ Interview sauvegardée avec succès !";
+        status.style.color = "green";
+      }
+
+      setTimeout(() => status.textContent = "", 3000);
+    }
+
+    async function initChat() {
+      const params = new URLSearchParams(window.location.search);
+      interviewId = params.get("id");
+
+      if (interviewId) {
+        const { data, error } = await supabase
+          .from('responses')
+          .select('content')
+          .eq('id', interviewId)
+          .single();
+
+        if (error || !data) {
+          afficher("LifeBook", "❌ Impossible de charger l'interview existante.", "bot");
+          return;
+        }
+
+        historique = data.content || [];
+        historique.forEach(msg => {
+          afficher(msg.role === "user" ? "Vous" : "LifeBook", msg.content, msg.role);
+        });
+
+        miseAJourProgression();
+      } else {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: [] })
+        });
+
+        const data = await response.json();
+        afficher("LifeBook", data.reply, "bot");
+        historique.push({ role: "assistant", content: data.reply });
+
+        fetch("/api/voice", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: data.reply })
+        })
+        .then(res => res.blob())
+        .then(blob => {
+          const audio = new Audio(URL.createObjectURL(blob));
+          audio.play();
+        });
+      }
+    }
+
+    function toggleRecording() {
+      const button = document.getElementById("speechButton");
+      const waveform = document.getElementById("waveform");
+
+      if (!recording) {
+        recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = "fr-FR";
+        recognition.interimResults = false;
+        waveform.style.display = "block";
+        button.textContent = "🛑 Stop";
+        recording = true;
+
+        recognition.onresult = function (event) {
+          const result = event.results[0][0].transcript;
+          document.getElementById("userInput").value = result;
+          waveform.style.display = "none";
+          button.textContent = "🎙️ Parler";
+          recording = false;
+          sendMessage();
+        };
+
+        recognition.onerror = function () {
+          waveform.style.display = "none";
+          button.textContent = "🎙️ Parler";
+          recording = false;
+        };
+
+        recognition.start();
+      } else {
+        recognition.stop();
+        waveform.style.display = "none";
+        button.textContent = "🎙️ Parler";
+        recording = false;
+      }
+    }
+
+    document.getElementById("saveButton").addEventListener("click", sauvegarder);
+    document.getElementById("userInput").addEventListener("keypress", e => {
+      if (e.key === "Enter") sendMessage();
+    });
+
+    window.onload = initChat;
+// ✅ Rendre les fonctions visibles pour les attributs onclick dans HTML
+window.sendMessage = sendMessage;
 window.passerQuestion = passerQuestion;
 window.genererLivre = genererLivre;
-window.sendMessage = sendMessage;
+window.toggleRecording = toggleRecording;
+  </script>
+</body>
+</html>
   </script>
 </body>
 </html>
