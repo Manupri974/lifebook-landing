@@ -72,7 +72,6 @@
     #messageStatus {
       margin-top: 10px;
       min-height: 20px;
-      font-size: 0.9em;
     }
     @keyframes wave {
       0% { background-position: 0 0; }
@@ -98,15 +97,21 @@
     </div>
   </div>
 
-  <script>
-    window.historique = [];
-    let historique = window.historique;
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js'
+
+    const supabase = createClient(
+      'https://qgmxclxahaqnvvxhgcms.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnbXhjbHhhaGFxbnZ2eGhnY21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM3OTYxODYsImV4cCI6MjA1OTM3MjE4Nn0.PhMpyFo9ZRgtLHdRyo6MXNjFNFy5WkH8LeqWnPJJCIE'
+    )
+
+    let historique = [];
     let questionIndex = 0;
+    let interviewId = null;
     let recognition;
     let recording = false;
 
-    const params = new URLSearchParams(window.location.search);
-    const responseId = params.get("id");
+    const status = document.getElementById("messageStatus");
 
     function afficher(auteur, texte, classe) {
       const msg = document.createElement("div");
@@ -117,7 +122,8 @@
     }
 
     function miseAJourProgression() {
-      document.getElementById("progression").innerText = `Question ${questionIndex + 1} / 89`;
+      const count = historique.filter(m => m.role === "user").length;
+      document.getElementById("progression").innerText = `Question ${count + 1} / 89`;
     }
 
     async function sendMessage() {
@@ -139,7 +145,6 @@
 
       afficher("LifeBook", botText, "bot");
       historique.push({ role: "assistant", content: botText });
-      questionIndex++;
       miseAJourProgression();
 
       fetch("/api/voice", {
@@ -184,15 +189,71 @@
       doc.save("LifeBook.pdf");
     }
 
-    document.getElementById("userInput").addEventListener("keypress", function (e) {
-      if (e.key === "Enter") {
-        sendMessage();
+    async function sauvegarder() {
+      status.textContent = "⏳ Sauvegarde en cours...";
+      status.style.color = "black";
+
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (!session || error) {
+        status.textContent = "❌ Non connecté.";
+        status.style.color = "red";
+        return;
       }
-    });
+
+      const user = session.user;
+      let result;
+
+      if (interviewId) {
+        result = await supabase
+          .from("responses")
+          .update({ content: historique })
+          .eq("id", interviewId);
+      } else {
+        result = await supabase
+          .from("responses")
+          .insert([{ user_id: user.id, content: historique }])
+          .select("id")
+          .single();
+
+        if (result.data?.id) {
+          interviewId = result.data.id;
+          history.replaceState(null, "", `chat.html?id=${interviewId}`);
+        }
+      }
+
+      if (result.error) {
+        status.textContent = "❌ Erreur : " + result.error.message;
+        status.style.color = "red";
+      } else {
+        status.textContent = "✅ Interview sauvegardée avec succès !";
+        status.style.color = "green";
+      }
+
+      setTimeout(() => status.textContent = "", 3000);
+    }
 
     async function initChat() {
-      if (responseId) {
-        await fetchSauvegarde(responseId);
+      const params = new URLSearchParams(window.location.search);
+      interviewId = params.get("id");
+
+      if (interviewId) {
+        const { data, error } = await supabase
+          .from('responses')
+          .select('content')
+          .eq('id', interviewId)
+          .single();
+
+        if (error || !data) {
+          afficher("LifeBook", "❌ Impossible de charger l'interview existante.", "bot");
+          return;
+        }
+
+        historique = data.content || [];
+        historique.forEach(msg => {
+          afficher(msg.role === "user" ? "Vous" : "LifeBook", msg.content, msg.role);
+        });
+
+        miseAJourProgression();
       } else {
         const response = await fetch("/api/chat", {
           method: "POST",
@@ -215,35 +276,6 @@
           audio.play();
         });
       }
-    }
-
-    async function fetchSauvegarde(id) {
-      const { createClient } = await import('https://esm.sh/@supabase/supabase-js');
-      const supabase = createClient(
-        'https://qgmxclxahaqnvvxhgcms.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnbXhjbHhhaGFxbnZ2eGhnY21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM3OTYxODYsImV4cCI6MjA1OTM3MjE4Nn0.PhMpyFo9ZRgtLHdRyo6MXNjFNFy5WkH8LeqWnPJJCIE'
-      );
-
-      const { data, error } = await supabase
-        .from("responses")
-        .select("content")
-        .eq("id", id)
-        .single();
-
-      if (error) {
-        console.error("Erreur chargement sauvegarde :", error);
-        return;
-      }
-
-      historique.push(...data.content);
-
-      data.content.forEach(m => {
-        if (m.role === "user") afficher("Vous", m.content, "user");
-        if (m.role === "assistant") afficher("LifeBook", m.content, "bot");
-      });
-
-      questionIndex = data.content.filter(m => m.role === "user").length;
-      miseAJourProgression();
     }
 
     function toggleRecording() {
@@ -282,49 +314,12 @@
       }
     }
 
-    window.onload = initChat;
-  </script>
-
-  <!-- Supabase module pour la sauvegarde -->
-  <script type="module">
-    import { createClient } from 'https://esm.sh/@supabase/supabase-js'
-
-    const supabase = createClient(
-      'https://qgmxclxahaqnvvxhgcms.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnbXhjbHhhaGFxbnZ2eGhnY21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM3OTYxODYsImV4cCI6MjA1OTM3MjE4Nn0.PhMpyFo9ZRgtLHdRyo6MXNjFNFy5WkH8LeqWnPJJCIE'
-    );
-
-    const bouton = document.getElementById("saveButton");
-    const status = document.getElementById("messageStatus");
-
-    bouton.addEventListener("click", async () => {
-      status.textContent = "⏳ Sauvegarde en cours...";
-      status.style.color = "black";
-
-      const { data: { session }, error } = await supabase.auth.getSession();
-
-      if (!session || error) {
-        status.textContent = "❌ Non connecté.";
-        status.style.color = "red";
-        return;
-      }
-
-      const user = session.user;
-      const { error: insertError } = await supabase
-        .from("responses")
-        .insert([{ user_id: user.id, content: window.historique }]);
-
-      if (insertError) {
-        console.error("Erreur Supabase :", insertError);
-        status.textContent = "❌ Erreur : " + insertError.message;
-        status.style.color = "red";
-      } else {
-        status.textContent = "✅ Interview sauvegardée avec succès !";
-        status.style.color = "green";
-      }
-
-      setTimeout(() => (status.textContent = ""), 4000);
+    document.getElementById("saveButton").addEventListener("click", sauvegarder);
+    document.getElementById("userInput").addEventListener("keypress", e => {
+      if (e.key === "Enter") sendMessage();
     });
+
+    window.onload = initChat;
   </script>
 </body>
 </html>
