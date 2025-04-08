@@ -238,43 +238,34 @@
     }
 
    async function genererLivre() {
-  const pairesQA = [];
-  for (let i = 0; i < historique.length; i++) {
-    const msg = historique[i];
-    const next = historique[i + 1];
-    if (msg.role === 'assistant' && next?.role === 'user') {
-      pairesQA.push(`❓ ${msg.content}\n📝 ${next.content}`);
-    }
-  }
-
-  const prompt = `Voici toutes les paires question/réponse d’un homme de 65 ans. Rédige un livre autobiographique littéraire et chronologique, avec du style, de l’émotion, et des transitions naturelles. Ne cite pas les questions, mais utilise le contenu pour écrire un texte fluide :
-
-${pairesQA.join('\n\n')}`;
+  const prompt = `Rédige un texte biographique littéraire à partir de l’interview suivante, en t’appuyant sur les questions et les réponses :\n\n${historique
+    .filter(m => m.role === 'user' || m.role === 'assistant')
+    .map(m => (m.role === 'assistant' ? `Q : ${m.content}` : `R : ${m.content}`))
+    .join('\n')}`;
 
   const response = await fetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       messages: [
-        { role: "system", content: "Tu es un écrivain biographe. Tu rédiges des livres de vie littéraires et chronologiques à partir de paires question/réponse." },
+        {
+          role: "system",
+          content:
+            "Tu es un écrivain biographe. Tu vas rédiger un récit fluide, littéraire et émouvant à partir de l’interview suivante. Utilise les questions (Q) et les réponses (R) pour structurer une narration complète et humaine, comme un vrai livre."
+        },
         { role: "user", content: prompt }
       ]
     })
   });
 
   const data = await response.json();
-
-  if (!data.reply) {
-    alert("Erreur réseau ou serveur lors de la génération.");
-    return;
-  }
-
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
   const lines = doc.splitTextToSize(data.reply, 180);
   doc.text(lines, 15, 20);
   doc.save("LifeBook.pdf");
 }
+
 
     async function sauvegarder() {
       status.textContent = "⏳ Sauvegarde en cours...";
@@ -379,11 +370,11 @@ ${pairesQA.join('\n\n')}`;
           return;
         }
 
-        historique = data.content || [];
-        historique.forEach(msg => {
-          afficher(msg.role === "user" ? "Vous" : "LifeBook", msg.content, msg.role);
-        });
-        miseAJourProgression();
+historique = data.content || [];
+historique.forEach(msg => {
+  afficher(msg.role === "user" ? "Vous" : "LifeBook", msg.content, msg.role);
+});
+miseAJourProgression();
       } else {
         const response = await fetch("/api/chat", {
           method: "POST",
