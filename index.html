@@ -49,7 +49,7 @@
     }
     .hero-text h2 {
       font-size: 3em;
-      color: #7e3af2;
+      color: #6a00ff;
       margin-bottom: 15px;
     }
     .hero-text p {
@@ -58,7 +58,7 @@
       margin-bottom: 25px;
     }
     .cta a {
-      background: #7e3af2;
+      background: #6a00ff;
       color: white;
       padding: 12px 30px;
       border-radius: 50px;
@@ -67,12 +67,11 @@
       transition: background 0.3s;
     }
     .cta a:hover {
-      background: #662fcb;
+      background: #5800d1;
     }
     .hero img {
       width: 45%;
-      border-radius: 15px;
-      box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+      box-shadow: none;
     }
     .section {
       max-width: 1100px;
@@ -83,7 +82,7 @@
       display: flex;
       gap: 25px;
       justify-content: center;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
     }
     .card {
       background: #fff;
@@ -98,7 +97,7 @@
       transform: translateY(-10px);
     }
     .card h3 {
-      color: #7e3af2;
+      color: #6a00ff;
       margin-top: 10px;
     }
     .card img {
@@ -147,7 +146,7 @@
       <p>Posez vos questions via une interface chat intuitive.</p>
     </div>
     <div class="card">
-      <img src="https://raw.githubusercontent.com/Manupri974/lifebook-landing/refs/heads/main/assets/Image%20r%C3%A9daction.png" alt="Rédaction">
+      <img src="https://raw.githubusercontent.com/Manupri974/lifebook-landing/refs/heads/main/assets/Image%20rédaction.png" alt="Rédaction">
       <h3>2. Rédaction</h3>
       <p>L'IA rédige un récit fluide et fidèle aux souvenirs partagés.</p>
     </div>
@@ -155,6 +154,24 @@
       <img src="https://raw.githubusercontent.com/Manupri974/lifebook-landing/refs/heads/main/assets/Image%20encart%20livraison.png" alt="Livre">
       <h3>3. Votre livre</h3>
       <p>Téléchargez votre e-book personnalisé prêt à être imprimé ou offert.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="tarifs">
+  <h2 style="text-align:center;">Nos offres</h2>
+  <div class="pricing">
+    <div class="card">
+      <h3>Gratuite</h3>
+      <p>Interview + e-book PDF simple<br/><strong>0 €</strong></p>
+    </div>
+    <div class="card">
+      <h3>Premium</h3>
+      <p>Mise en page élégante, couverture personnalisée<br/><strong>9 €</strong></p>
+    </div>
+    <div class="card">
+      <h3>Deluxe</h3>
+      <p>Version imprimée livrée chez vous<br/><strong>29 €</strong></p>
     </div>
   </div>
 </section>
@@ -167,7 +184,12 @@
   import { createClient } from 'https://esm.sh/@supabase/supabase-js';
   const supabase = createClient('URL_SUPABASE', 'CLE_SUPABASE');
 
-  document.querySelectorAll('.btnCommencer').forEach(btn => btn.onclick = () => window.location.href = "/auth.html");
+  document.addEventListener("DOMContentLoaded", async () => {
+    const boutonsCommencer = document.querySelectorAll('.btnCommencer');
+    const { data: { session } } = await supabase.auth.getSession();
+
+    boutonsCommencer.forEach(btn => btn.onclick = () => window.location.href = session ? "/chat.html" : "/auth.html");
+  });
 </script>
 </body>
 </html>
