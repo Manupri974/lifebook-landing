@@ -280,11 +280,23 @@ async function genererLivre() {
       return;
     }
 
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    const lines = doc.splitTextToSize(data.reply, 180);
-    doc.text(lines, 15, 20);
-    doc.save("LifeBook.pdf");
+const { jsPDF } = window.jspdf;
+const doc = new jsPDF();
+const lines = doc.splitTextToSize(data.reply, 180);
+
+let y = 20;
+const lineHeight = 10;
+
+lines.forEach(line => {
+  if (y > 280) { // seuil de bas de page
+    doc.addPage();
+    y = 20;
+  }
+  doc.text(line, 15, y);
+  y += lineHeight;
+});
+
+doc.save("LifeBook.pdf");
 
   } catch (error) {
     console.error("Erreur réseau ou serveur :", error);
