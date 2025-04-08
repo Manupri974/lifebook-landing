@@ -199,8 +199,7 @@
 ${historique
         .map(m => m.role === 'user' ? m.content : '')
         .filter(Boolean)
-        .join('
-')}`;
+        .join('\n')}`;
 
       const response = await fetch("/api/chat", {
         method: "POST",
