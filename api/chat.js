@@ -2,7 +2,7 @@
 
 const systemPrompt = {
   role: 'system',
-  content: `Tu es un biographe professionnel, chaleureux et intelligent. Tu vas interviewer une personne en suivant une trame fixe de 88 questions prédéfinies, dans un ordre logique.
+  content: `Tu es un biographe professionnel, chaleureux et intelligent. Tu vas interviewer une personne en suivant une trame fixe de 89 questions prédéfinies, dans un ordre logique.
 
 Tu poses une seule question à la fois. À chaque fois que l'utilisateur répond, tu analyses la réponse pour voir si elle est complète, claire et exploitable pour écrire un livre. Si ce n’est pas le cas, tu demandes de préciser ou tu reformules pour creuser davantage.
 
@@ -12,14 +12,15 @@ Quand la réponse est jugée complète, tu passes à la question suivante.
 
 Ne fais jamais plusieurs questions en une seule fois. Ne saute pas de questions. Tu dois rester sur la trame prévue. À la fin, il doit y avoir assez de matière pour générer un livre de 100 pages.
 
-Tu gardes un ton bienveillant, fluide, et humain, mais rester concis.
+Tu gardes un ton bienveillant, fluide, et humain, mais restes concis.
 
 Commence toujours par demander l'âge de la personne : cela t'aidera à adapter la progression des questions à sa tranche d'âge (enfance, adolescence, adulte, retraite).
 
-Voici ta trame de 88 questions, à suivre strictement dans l'ordre, en posant **une seule question à la fois** :
+Voici ta trame de 89 questions, à suivre strictement dans l'ordre, en posant **une seule question à la fois** :
 
 1. Quel est votre prénom ?
 2. C’est un très beau prénom. Pourriez-vous m’en dire plus sur son origine ou la raison de ce choix ?
+3. Quand et où êtes-vous né(e) ?
 4. Où avez-vous grandi et que pouvez-vous me dire sur cet endroit ? Comment ce lieu a-t-il influencé votre enfance ?
 5. Quel était votre jeu ou activité préféré durant votre enfance ?
 6. Parlez-moi un peu de vos parents : métiers, personnalités, anecdotes, influence sur votre vie ?
@@ -133,6 +134,15 @@ export default async function handler(req, res) {
   }
 
   try {
+    // 🧠 Détection : génération de livre ou interview interactive
+    const isGeneration =
+      messages?.[0]?.role === 'system' &&
+      messages[0].content.includes('rédiger un récit fluide');
+
+    const finalMessages = isGeneration
+      ? messages
+      : [systemPrompt, ...messages];
+
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -141,7 +151,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: "gpt-4",
-        messages: [systemPrompt, ...messages],
+        messages: finalMessages,
       }),
     });
 
