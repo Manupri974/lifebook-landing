@@ -6,6 +6,7 @@
   <title>Interview LifeBook</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <style>
     body {
       font-family: 'Poppins', sans-serif;
@@ -21,9 +22,10 @@
       align-items: center;
       justify-content: space-between;
     }
-    header h1 {
+    header a {
+      text-decoration: none;
       color: #a347ba;
-      margin: 0;
+      font-weight: 600;
       font-size: 1.4em;
     }
     #chat {
@@ -65,23 +67,30 @@
       font-size: 1em;
     }
     .button-group {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 12px;
       margin-top: 20px;
     }
-    button {
-      padding: 12px 20px;
+    .button-group button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px;
       border: none;
-      border-radius: 50px;
+      border-radius: 12px;
       background: #a347ba;
       color: white;
       font-weight: 600;
-      font-size: 0.95em;
+      font-size: 0.9em;
       cursor: pointer;
       transition: background 0.2s ease;
     }
-    button:hover {
+    .button-group button i {
+      font-size: 1em;
+    }
+    .button-group button:hover {
       background: #912ca3;
     }
     #waveform {
@@ -108,8 +117,7 @@
 </head>
 <body>
   <header>
-    <h1>📘 LifeBook</h1>
-    <div></div>
+    <a href="/index.html">LifeBook</a>
   </header>
 
   <div id="chat">
@@ -117,11 +125,11 @@
     <div id="progression">Question 1 / 89</div>
     <input id="userInput" type="text" placeholder="Votre réponse..." />
     <div class="button-group">
-      <button id="sendBtn">Envoyer</button>
-      <button id="skipBtn">Passer à la question suivante</button>
-      <button id="generateBtn">Terminer et générer</button>
-      <button id="saveButton">💾 Sauvegarder</button>
-      <button id="speechButton">🎙️ Parler</button>
+      <button id="sendBtn"><i class="fas fa-paper-plane"></i> Envoyer</button>
+      <button id="skipBtn"><i class="fas fa-forward"></i> Suivante</button>
+      <button id="generateBtn"><i class="fas fa-book"></i> Générer</button>
+      <button id="saveButton"><i class="fas fa-save"></i> Sauvegarder</button>
+      <button id="speechButton"><i class="fas fa-microphone"></i> Parler</button>
     </div>
     <div id="waveform"></div>
     <div id="messageStatus"></div>
