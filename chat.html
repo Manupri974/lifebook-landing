@@ -238,67 +238,43 @@
     }
 
    async function genererLivre() {
-  // Vérifier si l'historique contient des réponses utilisateur et de l'assistant
-  if (historique.filter(m => m.role === 'user').length === 0) {
-    alert("Aucune réponse disponible pour générer le livre.");
+  const pairesQA = [];
+  for (let i = 0; i < historique.length; i++) {
+    const msg = historique[i];
+    const next = historique[i + 1];
+    if (msg.role === 'assistant' && next?.role === 'user') {
+      pairesQA.push(`❓ ${msg.content}\n📝 ${next.content}`);
+    }
+  }
+
+  const prompt = `Voici toutes les paires question/réponse d’un homme de 65 ans. Rédige un livre autobiographique littéraire et chronologique, avec du style, de l’émotion, et des transitions naturelles. Ne cite pas les questions, mais utilise le contenu pour écrire un texte fluide :
+
+${pairesQA.join('\n\n')}`;
+
+  const response = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      messages: [
+        { role: "system", content: "Tu es un écrivain biographe. Tu rédiges des livres de vie littéraires et chronologiques à partir de paires question/réponse." },
+        { role: "user", content: prompt }
+      ]
+    })
+  });
+
+  const data = await response.json();
+
+  if (!data.reply) {
+    alert("Erreur réseau ou serveur lors de la génération.");
     return;
   }
 
-  // Construction du prompt avec les questions et les réponses
-  const dialogue = historique
-    .map((m, index) => {
-      if (m.role === 'assistant') {
-        return `Question : ${m.content}`;
-      } else if (m.role === 'user') {
-        return `Réponse : ${m.content}`;
-      }
-    })
-    .join('\n\n');
-
-  const prompt = `Voici une interview complète entre un biographe et une personne interviewée. À partir de ce dialogue complet (questions et réponses), rédige un texte biographique littéraire, fluide, et émouvant :
-
-${dialogue}`;
-
-  try {
-    const response = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        messages: [
-          {
-            role: "system",
-            content: "Tu es un écrivain biographe expérimenté. À partir du dialogue fourni (questions et réponses), tu rédiges un texte littéraire, chronologique et bien contextualisé, reflétant fidèlement les informations fournies par la personne interviewée. Le texte doit être fluide, émouvant, et cohérent.",
-          },
-          { role: "user", content: prompt },
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      alert("Erreur réseau ou serveur lors de la génération du livre.");
-      return;
-    }
-
-    const data = await response.json();
-
-    if (!data.reply) {
-      alert("Erreur : réponse vide de l'API.");
-      return;
-    }
-
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    // Formatage du texte dans le PDF
-    const lines = doc.splitTextToSize(data.reply, 180);
-    doc.text(lines, 15, 20);
-    doc.save("LifeBook.pdf");
-  } catch (error) {
-    alert(`Erreur lors de la génération du livre : ${error.message}`);
-    console.error("Erreur détaillée :", error);
-  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const lines = doc.splitTextToSize(data.reply, 180);
+  doc.text(lines, 15, 20);
+  doc.save("LifeBook.pdf");
 }
-
 
     async function sauvegarder() {
       status.textContent = "⏳ Sauvegarde en cours...";
