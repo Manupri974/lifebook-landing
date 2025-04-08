@@ -238,12 +238,17 @@
     }
 
 async function genererLivre() {
-  const prompt = `Rédige un texte biographique littéraire à partir de l’interview suivante, en t’appuyant sur les questions (Q) et les réponses (R) :\n\n${historique
-    .filter(m => m.role === 'user' || m.role === 'assistant')
-    .map(m => (m.role === 'assistant' ? `Q : ${m.content}` : `R : ${m.content}`))
-    .join('\n')}`;
+  if (!historique || historique.length < 4) {
+    alert("⛔️ Pas assez de contenu pour générer un livre. Complétez plus de réponses.");
+    return;
+  }
 
-  console.log("📤 Prompt envoyé à l'API :", prompt); // Debug
+  const contenu = historique
+    .filter(m => m.role === 'user' || m.role === 'assistant')
+    .map(m => m.role === 'assistant' ? `Q : ${m.content}` : `R : ${m.content}`)
+    .join('\n');
+
+  const prompt = `Voici l'interview d'une personne. Chaque bloc commence par une question (Q) suivie d'une réponse (R).\nUtilise-les pour rédiger un texte littéraire et émouvant, structuré chronologiquement, racontant la vie de la personne.\n\n${contenu}`;
 
   const response = await fetch("/api/chat", {
     method: "POST",
@@ -253,7 +258,7 @@ async function genererLivre() {
         {
           role: "system",
           content:
-            "Tu es un écrivain biographe. Rédige un récit fluide, littéraire et émouvant à partir de cette interview. Utilise les questions (Q) et les réponses (R) pour structurer une narration humaine, chronologique et chaleureuse."
+            "Tu es un biographe professionnel. Rédige un récit fluide, littéraire, chronologique et humain à partir des Q/R suivantes. Ne copie pas les questions, raconte l'histoire en continu comme dans un livre."
         },
         { role: "user", content: prompt }
       ]
@@ -261,33 +266,16 @@ async function genererLivre() {
   });
 
   const data = await response.json();
-  const texte = data.reply || "";
 
-  console.log("📥 Réponse de l'API :", texte); // Debug
-
-  if (!texte || texte.trim() === "") {
-    alert("❌ Le texte généré est vide. Vérifie que l’interview contient suffisamment de contenu.");
+  if (!data.reply || data.reply.trim().length === 0) {
+    alert("Le texte généré est vide. Vérifie que l’interview contient suffisamment de contenu.");
     return;
   }
 
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
-  const margin = 15;
-  const lineHeight = 7;
-  const pageHeight = doc.internal.pageSize.height;
-  let y = margin;
-
-  const lignes = doc.splitTextToSize(texte, 180);
-
-  lignes.forEach(ligne => {
-    if (y + lineHeight > pageHeight - margin) {
-      doc.addPage();
-      y = margin;
-    }
-    doc.text(ligne, margin, y);
-    y += lineHeight;
-  });
-
+  const lines = doc.splitTextToSize(data.reply, 180);
+  doc.text(lines, 15, 20);
   doc.save("LifeBook.pdf");
 }
 
