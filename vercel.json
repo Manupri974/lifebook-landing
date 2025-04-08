@@ -3,5 +3,10 @@
     { "source": "/", "destination": "/index.html" },
     { "source": "/chat", "destination": "/chat.html" },
     { "source": "/chat.html", "destination": "/chat.html" }
-  ]
+  ],
+  "functions": {
+    "api/chat.js": {
+      "maxDuration": 30
+    }
+  }
 }
