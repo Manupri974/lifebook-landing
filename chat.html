@@ -237,30 +237,68 @@
       sendMessage();
     }
 
-    async function genererLivre() {
-      const prompt = `Rédige un texte biographique littéraire à partir des réponses suivantes :\n\n${historique
-        .map(m => m.role === 'user' ? m.content : '')
-        .filter(Boolean)
-        .join('\n')}`;
+   async function genererLivre() {
+  // Vérifier si l'historique contient des réponses utilisateur et de l'assistant
+  if (historique.filter(m => m.role === 'user').length === 0) {
+    alert("Aucune réponse disponible pour générer le livre.");
+    return;
+  }
 
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [
-            { role: "system", content: "Tu es un écrivain biographe. Transforme les réponses suivantes en une narration fluide, littéraire et émotive, dans l’ordre chronologique." },
-            { role: "user", content: prompt }
-          ]
-        })
-      });
+  // Construction du prompt avec les questions et les réponses
+  const dialogue = historique
+    .map((m, index) => {
+      if (m.role === 'assistant') {
+        return `Question : ${m.content}`;
+      } else if (m.role === 'user') {
+        return `Réponse : ${m.content}`;
+      }
+    })
+    .join('\n\n');
 
-      const data = await response.json();
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      const lines = doc.splitTextToSize(data.reply, 180);
-      doc.text(lines, 15, 20);
-      doc.save("LifeBook.pdf");
+  const prompt = `Voici une interview complète entre un biographe et une personne interviewée. À partir de ce dialogue complet (questions et réponses), rédige un texte biographique littéraire, fluide, et émouvant :
+
+${dialogue}`;
+
+  try {
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages: [
+          {
+            role: "system",
+            content: "Tu es un écrivain biographe expérimenté. À partir du dialogue fourni (questions et réponses), tu rédiges un texte littéraire, chronologique et bien contextualisé, reflétant fidèlement les informations fournies par la personne interviewée. Le texte doit être fluide, émouvant, et cohérent.",
+          },
+          { role: "user", content: prompt },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      alert("Erreur réseau ou serveur lors de la génération du livre.");
+      return;
     }
+
+    const data = await response.json();
+
+    if (!data.reply) {
+      alert("Erreur : réponse vide de l'API.");
+      return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    // Formatage du texte dans le PDF
+    const lines = doc.splitTextToSize(data.reply, 180);
+    doc.text(lines, 15, 20);
+    doc.save("LifeBook.pdf");
+  } catch (error) {
+    alert(`Erreur lors de la génération du livre : ${error.message}`);
+    console.error("Erreur détaillée :", error);
+  }
+}
+
 
     async function sauvegarder() {
       status.textContent = "⏳ Sauvegarde en cours...";
