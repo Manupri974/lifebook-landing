@@ -237,10 +237,11 @@
       sendMessage();
     }
 
-let isGenerating = false;
+let isGenerating = false; // Pour éviter les clics multiples
 
 async function genererLivre() {
-  if (isGenerating) return; // Empêche les clics multiples
+  if (isGenerating) return;
+
   if (!historique || historique.length < 4) {
     alert("⛔️ Pas assez de contenu pour générer un livre. Complétez plus de réponses.");
     return;
@@ -248,18 +249,15 @@ async function genererLivre() {
 
   isGenerating = true;
   const generateBtn = document.getElementById("generateBtn");
-  const status = document.getElementById("messageStatus");
   generateBtn.disabled = true;
-  generateBtn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Génération...";
-  status.textContent = "✍️ Génération du livre en cours...";
-  status.style.color = "black";
+  generateBtn.innerHTML = "⏳ Génération...";
 
   const contenu = historique
     .filter(m => m.role === 'user' || m.role === 'assistant')
     .map(m => m.role === 'assistant' ? `Q : ${m.content}` : `R : ${m.content}`)
     .join('\n');
 
-  const prompt = `Voici l'interview d'une personne. Chaque bloc commence par une question (Q) suivie d'une réponse (R).\nUtilise-les pour rédiger un texte chronologique, humain, accessible et vivant. Si certaines réponses sont courtes, tu peux les enrichir avec des détails réalistes, mais reste simple, fluide et clair.\n\n${contenu}`;
+  const prompt = `Voici une interview contenant des questions (Q) et des réponses (R).\nRédige une biographie littéraire, chaleureuse et chronologique à partir de ces éléments.\nSi certaines réponses sont incomplètes, utilise ton imagination pour combler, tout en restant crédible et cohérent.\nÉvite de répéter les questions. Raconte l’histoire comme un vrai petit roman.\n\n${contenu}`;
 
   try {
     const response = await fetch("/api/chat", {
@@ -269,13 +267,19 @@ async function genererLivre() {
         messages: [
           {
             role: "system",
-            content:
-              "Tu es un écrivain biographe. Ton objectif est de transformer les questions et réponses d'une interview en un récit fluide, vivant et humain. Si certaines réponses sont brèves, tu peux les enrichir avec des détails réalistes, mais reste simple, clair et accessible. Ne copie pas les questions, mais raconte l'histoire comme dans un livre, dans l'ordre chronologique."
+            content: "Tu es un écrivain biographe. Tu rédiges un récit fluide, littéraire et humain à partir d’une interview Q/R. Tu peux broder ou compléter les réponses si elles sont trop courtes, mais sans déformer la cohérence générale. Ton style est chaleureux, accessible et inspirant."
           },
           { role: "user", content: prompt }
         ]
       })
     });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Erreur API OpenAI :", errorText);
+      alert("❌ Erreur API OpenAI : " + errorText);
+      return;
+    }
 
     const data = await response.json();
 
@@ -284,23 +288,20 @@ async function genererLivre() {
       return;
     }
 
+    // Génération PDF
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     const lines = doc.splitTextToSize(data.reply, 180);
     doc.text(lines, 15, 20);
     doc.save("LifeBook.pdf");
 
-    status.textContent = "✅ Livre généré avec succès !";
-    status.style.color = "green";
   } catch (error) {
-    console.error("Erreur API OpenAI :", error);
-    status.textContent = "❌ Erreur lors de la génération. Veuillez réessayer.";
-    status.style.color = "red";
+    console.error("Erreur JS :", error);
+    alert("❌ Erreur inattendue : " + error.message);
   } finally {
     isGenerating = false;
     generateBtn.disabled = false;
     generateBtn.innerHTML = "<i class='fas fa-book'></i> Générer";
-    setTimeout(() => (status.textContent = ""), 4000);
   }
 }
 
