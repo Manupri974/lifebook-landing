@@ -237,11 +237,13 @@
       sendMessage();
     }
 
-   async function genererLivre() {
-  const prompt = `Rédige un texte biographique littéraire à partir de l’interview suivante, en t’appuyant sur les questions et les réponses :\n\n${historique
+async function genererLivre() {
+  const prompt = `Rédige un texte biographique littéraire à partir de l’interview suivante, en t’appuyant sur les questions (Q) et les réponses (R) :\n\n${historique
     .filter(m => m.role === 'user' || m.role === 'assistant')
     .map(m => (m.role === 'assistant' ? `Q : ${m.content}` : `R : ${m.content}`))
     .join('\n')}`;
+
+  console.log("📤 Prompt envoyé à l'API :", prompt); // Debug
 
   const response = await fetch("/api/chat", {
     method: "POST",
@@ -251,7 +253,7 @@
         {
           role: "system",
           content:
-            "Tu es un écrivain biographe. Tu vas rédiger un récit fluide, littéraire et émouvant à partir de l’interview suivante. Utilise les questions (Q) et les réponses (R) pour structurer une narration complète et humaine, comme un vrai livre."
+            "Tu es un écrivain biographe. Rédige un récit fluide, littéraire et émouvant à partir de cette interview. Utilise les questions (Q) et les réponses (R) pour structurer une narration humaine, chronologique et chaleureuse."
         },
         { role: "user", content: prompt }
       ]
@@ -259,13 +261,35 @@
   });
 
   const data = await response.json();
+  const texte = data.reply || "";
+
+  console.log("📥 Réponse de l'API :", texte); // Debug
+
+  if (!texte || texte.trim() === "") {
+    alert("❌ Le texte généré est vide. Vérifie que l’interview contient suffisamment de contenu.");
+    return;
+  }
+
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
-  const lines = doc.splitTextToSize(data.reply, 180);
-  doc.text(lines, 15, 20);
+  const margin = 15;
+  const lineHeight = 7;
+  const pageHeight = doc.internal.pageSize.height;
+  let y = margin;
+
+  const lignes = doc.splitTextToSize(texte, 180);
+
+  lignes.forEach(ligne => {
+    if (y + lineHeight > pageHeight - margin) {
+      doc.addPage();
+      y = margin;
+    }
+    doc.text(ligne, margin, y);
+    y += lineHeight;
+  });
+
   doc.save("LifeBook.pdf");
 }
-
 
     async function sauvegarder() {
       status.textContent = "⏳ Sauvegarde en cours...";
