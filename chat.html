@@ -255,14 +255,20 @@ async function genererLivre() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        messages: [
-          {
-            role: "system",
-            content:
-              "Tu es un biographe professionnel. Rédige un récit fluide, littéraire, chronologique et humain à partir des Q/R suivantes. Ne copie pas les questions, raconte l'histoire en continu comme dans un livre."
-          },
-          { role: "user", content: prompt }
-        ]
+messages: [
+  {
+    role: "system",
+    content: `
+Tu es un biographe professionnel. Ton rôle est de transformer une série de questions/réponses en un récit littéraire fluide, structuré chronologiquement et profondément humain.
+
+Même si certaines réponses sont brèves ou peu développées, tu dois les enrichir, combler les silences, broder avec cohérence et créativité. Tu peux imaginer des éléments crédibles, ajouter des détails sensoriels, émotionnels ou narratifs pour rendre le texte plus captivant.
+
+Adopte un ton chaleureux, vivant, parfois poétique. Raconte la vie de cette personne comme dans un roman biographique, sans énumération. Ne copie pas les questions, construis une histoire continue.
+    `.trim()
+  },
+  { role: "user", content: prompt }
+]
+
       })
     });
 
