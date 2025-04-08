@@ -151,6 +151,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: "gpt-4o",
+        temperature : 1.2,
         messages: finalMessages,
       }),
     });
