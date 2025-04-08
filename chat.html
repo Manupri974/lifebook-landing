@@ -58,13 +58,42 @@
       text-align: right;
       color: #999;
     }
+    .input-group {
+      position: relative;
+    }
     input[type="text"] {
       width: 100%;
-      padding: 14px;
+      padding: 14px 48px 14px 14px;
       margin-top: 10px;
       border: 1px solid #ccc;
       border-radius: 12px;
       font-size: 1em;
+    }
+    #speechButton {
+      position: absolute;
+      top: 50%;
+      right: 10px;
+      transform: translateY(-50%);
+      background: #d3a6e4;
+      border: none;
+      border-radius: 50%;
+      padding: 8px;
+      cursor: pointer;
+      color: white;
+      font-size: 1em;
+      transition: background 0.2s ease, transform 0.3s ease;
+    }
+    #speechButton:hover {
+      background: #b674d3;
+    }
+    #speechButton.recording {
+      background: #a347ba;
+      animation: pulse 1.2s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+      100% { transform: scale(1); }
     }
     .button-group {
       display: grid;
@@ -123,13 +152,15 @@
   <div id="chat">
     <div id="messages"></div>
     <div id="progression">Question 1 / 89</div>
-    <input id="userInput" type="text" placeholder="Votre réponse..." />
+    <div class="input-group">
+      <input id="userInput" type="text" placeholder="Votre réponse..." />
+      <button id="speechButton"><i class="fas fa-microphone"></i></button>
+    </div>
     <div class="button-group">
       <button id="sendBtn"><i class="fas fa-paper-plane"></i> Envoyer</button>
       <button id="skipBtn"><i class="fas fa-forward"></i> Suivante</button>
       <button id="generateBtn"><i class="fas fa-book"></i> Générer</button>
       <button id="saveButton"><i class="fas fa-save"></i> Sauvegarder</button>
-      <button id="speechButton"><i class="fas fa-microphone"></i> Parler</button>
     </div>
     <div id="waveform"></div>
     <div id="messageStatus"></div>
@@ -370,6 +401,15 @@ ${historique
     });
 
     window.onload = initChat;
+    const speechButton = document.getElementById("speechButton");
+
+    speechButton.addEventListener("click", () => {
+      if (speechButton.classList.contains("recording")) {
+        speechButton.classList.remove("recording");
+      } else {
+        speechButton.classList.add("recording");
+      }
+    });
   </script>
 </body>
 </html>
