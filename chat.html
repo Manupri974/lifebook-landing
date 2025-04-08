@@ -250,35 +250,47 @@ async function genererLivre() {
 
   const prompt = `Voici l'interview d'une personne. Chaque bloc commence par une question (Q) suivie d'une réponse (R).\nUtilise-les pour rédiger un texte littéraire et émouvant, structuré chronologiquement, racontant la vie de la personne.\n\n${contenu}`;
 
-  const response = await fetch("/api/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      messages: [
-        {
-          role: "system",
-          content:
-            "Tu es un biographe professionnel. Rédige un récit fluide, littéraire, chronologique et humain à partir des Q/R suivantes. Ne copie pas les questions, raconte l'histoire en continu comme dans un livre."
-        },
-        { role: "user", content: prompt }
-      ]
-    })
-  });
+  try {
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages: [
+          {
+            role: "system",
+            content:
+              "Tu es un biographe professionnel. Rédige un récit fluide, littéraire, chronologique et humain à partir des Q/R suivantes. Ne copie pas les questions, raconte l'histoire en continu comme dans un livre."
+          },
+          { role: "user", content: prompt }
+        ]
+      })
+    });
 
-  const data = await response.json();
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Erreur API OpenAI :", errorText);
+      alert("❌ Erreur lors de l'appel à l'API OpenAI : " + errorText);
+      return;
+    }
 
-  if (!data.reply || data.reply.trim().length === 0) {
-    alert("Le texte généré est vide. Vérifie que l’interview contient suffisamment de contenu.");
-    return;
+    const data = await response.json();
+
+    if (!data.reply || data.reply.trim().length === 0) {
+      alert("Le texte généré est vide. Vérifie que l’interview contient suffisamment de contenu.");
+      return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const lines = doc.splitTextToSize(data.reply, 180);
+    doc.text(lines, 15, 20);
+    doc.save("LifeBook.pdf");
+
+  } catch (error) {
+    console.error("Erreur réseau ou serveur :", error);
+    alert("❌ Erreur réseau ou serveur lors de la génération du livre.");
   }
-
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  const lines = doc.splitTextToSize(data.reply, 180);
-  doc.text(lines, 15, 20);
-  doc.save("LifeBook.pdf");
 }
-
     async function sauvegarder() {
       status.textContent = "⏳ Sauvegarde en cours...";
       status.style.color = "black";
