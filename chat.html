@@ -237,47 +237,45 @@
       sendMessage();
     }
 
+let isGenerating = false;
+
 async function genererLivre() {
+  if (isGenerating) return; // Empêche les clics multiples
   if (!historique || historique.length < 4) {
     alert("⛔️ Pas assez de contenu pour générer un livre. Complétez plus de réponses.");
     return;
   }
+
+  isGenerating = true;
+  const generateBtn = document.getElementById("generateBtn");
+  const status = document.getElementById("messageStatus");
+  generateBtn.disabled = true;
+  generateBtn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Génération...";
+  status.textContent = "✍️ Génération du livre en cours...";
+  status.style.color = "black";
 
   const contenu = historique
     .filter(m => m.role === 'user' || m.role === 'assistant')
     .map(m => m.role === 'assistant' ? `Q : ${m.content}` : `R : ${m.content}`)
     .join('\n');
 
-  const prompt = `Voici l'interview d'une personne. Chaque bloc commence par une question (Q) suivie d'une réponse (R).\nUtilise-les pour rédiger un texte littéraire et émouvant, structuré chronologiquement, racontant la vie de la personne.\n\n${contenu}`;
+  const prompt = `Voici l'interview d'une personne. Chaque bloc commence par une question (Q) suivie d'une réponse (R).\nUtilise-les pour rédiger un texte chronologique, humain, accessible et vivant. Si certaines réponses sont courtes, tu peux les enrichir avec des détails réalistes, mais reste simple, fluide et clair.\n\n${contenu}`;
 
   try {
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-messages: [
-  {
-    role: "system",
-    content: `
-Tu es un biographe professionnel. Ton rôle est de transformer une série de questions/réponses en un récit littéraire fluide, structuré chronologiquement et profondément humain.
-
-Même si certaines réponses sont brèves ou peu développées, tu dois les enrichir, combler les silences, broder avec cohérence et créativité. Tu peux imaginer des éléments crédibles, ajouter des détails sensoriels, émotionnels ou narratifs pour rendre le texte plus captivant.
-
-Adopte un ton chaleureux, vivant, parfois poétique. Raconte la vie de cette personne comme dans un roman biographique, sans énumération. Ne copie pas les questions, construis une histoire continue.
-    `.trim()
-  },
-  { role: "user", content: prompt }
-]
-
+        messages: [
+          {
+            role: "system",
+            content:
+              "Tu es un écrivain biographe. Ton objectif est de transformer les questions et réponses d'une interview en un récit fluide, vivant et humain. Si certaines réponses sont brèves, tu peux les enrichir avec des détails réalistes, mais reste simple, clair et accessible. Ne copie pas les questions, mais raconte l'histoire comme dans un livre, dans l'ordre chronologique."
+          },
+          { role: "user", content: prompt }
+        ]
       })
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Erreur API OpenAI :", errorText);
-      alert("❌ Erreur lors de l'appel à l'API OpenAI : " + errorText);
-      return;
-    }
 
     const data = await response.json();
 
@@ -286,29 +284,26 @@ Adopte un ton chaleureux, vivant, parfois poétique. Raconte la vie de cette per
       return;
     }
 
-const { jsPDF } = window.jspdf;
-const doc = new jsPDF();
-const lines = doc.splitTextToSize(data.reply, 180);
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const lines = doc.splitTextToSize(data.reply, 180);
+    doc.text(lines, 15, 20);
+    doc.save("LifeBook.pdf");
 
-let y = 20;
-const lineHeight = 10;
-
-lines.forEach(line => {
-  if (y > 280) { // seuil de bas de page
-    doc.addPage();
-    y = 20;
-  }
-  doc.text(line, 15, y);
-  y += lineHeight;
-});
-
-doc.save("LifeBook.pdf");
-
+    status.textContent = "✅ Livre généré avec succès !";
+    status.style.color = "green";
   } catch (error) {
-    console.error("Erreur réseau ou serveur :", error);
-    alert("❌ Erreur réseau ou serveur lors de la génération du livre.");
+    console.error("Erreur API OpenAI :", error);
+    status.textContent = "❌ Erreur lors de la génération. Veuillez réessayer.";
+    status.style.color = "red";
+  } finally {
+    isGenerating = false;
+    generateBtn.disabled = false;
+    generateBtn.innerHTML = "<i class='fas fa-book'></i> Générer";
+    setTimeout(() => (status.textContent = ""), 4000);
   }
 }
+
     async function sauvegarder() {
       status.textContent = "⏳ Sauvegarde en cours...";
       status.style.color = "black";
