@@ -246,8 +246,6 @@ const data = await response.json();
       historique.push({ role: "user", content: "passons" });
       sendMessage();
     }
-let isGenerating = false;
-
 async function genererLivre() {
   if (!historique || historique.length < 4) {
     alert("⛔️ Pas assez de contenu pour générer un livre. Complétez plus de réponses.");
@@ -258,97 +256,46 @@ async function genererLivre() {
   btn.disabled = true;
   btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Génération...`;
 
-  console.log("🚀 Début de la génération segmentée...");
+  try {
+    const response = await fetch("/api/generer-livre", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ historique })
+    });
 
-  // 🔹 Étape 1 : Extraire uniquement les réponses utilisateur
-  const reponses = [];
-  for (let i = 0; i < historique.length; i++) {
-    const msg = historique[i];
-    if (msg.role === "user") {
-      reponses.push(msg.content.trim());
+    const data = await response.json();
+
+    if (!data || !data.texte || data.texte.length < 100) {
+      throw new Error("Texte généré insuffisant.");
     }
-  }
 
-  // 🔹 Étape 2 : Couper en segments de 4 réponses max
-  const groupes = [];
-  for (let i = 0; i < reponses.length; i += 4) {
-    groupes.push(reponses.slice(i, i + 4).join("\n\n"));
-  }
+    const texteFinal = data.texte;
 
-  // 🔹 Étape 3 : Prompt de base
-  const promptSysteme = "Tu es un biographe professionnel.";
-  const promptUserBase = `
-Voici une partie d’interview biographique.
+    // 🖨️ Génération du PDF avec jsPDF
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const lines = doc.splitTextToSize(texteFinal, 180);
 
-Ta mission :
-- Rédiger un passage fluide, littéraire, humain et chronologique.
-- N’invente rien. N’ajoute aucune information.
-- N’utilise que le contenu ci-dessous.
-
-Contenu :
-`;
-
-  const morceaux = [];
-
-  // 🔹 Étape 4 : Génération pour chaque segment
-  for (const bloc of groupes) {
-    try {
-      console.log("📤 Envoi du bloc :", bloc.slice(0, 100) + "...");
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [
-            { role: "system", content: promptSysteme },
-            { role: "user", content: promptUserBase + bloc }
-          ]
-        })
-      });
-
-      const data = await response.json();
-      if (data?.reply) {
-        morceaux.push(data.reply.trim());
-        console.log("✅ Segment reçu");
-      } else {
-        console.warn("⚠️ Pas de texte généré pour un segment.");
+    let y = 20;
+    for (const line of lines) {
+      doc.text(line, 15, y);
+      y += 7;
+      if (y > 280) {
+        doc.addPage();
+        y = 20;
       }
-    } catch (err) {
-      console.error("❌ Erreur segment :", err);
     }
+
+    doc.save("LifeBook.pdf");
+  } catch (err) {
+    console.error("❌ Erreur lors de la génération du livre :", err);
+    alert("❌ Une erreur est survenue lors de la génération du livre.");
   }
-
-  // 🔹 Étape 5 : Assembler tous les segments
-  const texteFinal = morceaux.join("\n\n");
-
-  if (!texteFinal || texteFinal.length < 100) {
-    alert("❌ Le texte généré est trop court. Vérifie les réponses.");
-    btn.disabled = false;
-    btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
-    return;
-  }
-
-  // 🔹 Étape 6 : Générer le PDF
-  console.log("📘 Texte final généré :", texteFinal);
-
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  const lines = doc.splitTextToSize(texteFinal, 180);
-
-  let y = 20;
-  for (const line of lines) {
-    doc.text(line, 15, y);
-    y += 7;
-    if (y > 280) {
-      doc.addPage();
-      y = 20;
-    }
-  }
-
-  doc.save("LifeBook.pdf");
 
   btn.disabled = false;
   btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
 }
+
     async function sauvegarder() {
       status.textContent = "⏳ Sauvegarde en cours...";
       status.style.color = "black";
