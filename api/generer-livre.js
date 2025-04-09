@@ -10,59 +10,34 @@ export default async function handler(req, res) {
     return res.status(400).json({ message: 'Clé API ou historique manquant/invalide' });
   }
 
-  console.log("📚 Lancement de la génération multi-prompt par question...");
+  console.log("🚀 Envoi à OpenAI - Nombre de réponses :", historique.length);
 
-  const blocks = historique.filter(m => m.role === 'user');
-  const chapitreParReponse = [];
+  const promptSysteme = "Tu es un biographe professionnel. Ton style est littéraire, fluide et chaleureux.";
 
-  for (let i = 0; i < blocks.length; i++) {
-    const contenu = blocks[i].content.trim();
-    const prompt = `Tu es un écrivain biographique. Rédige un paragraphe littéraire et expressif à partir de cette réponse d'interview. N'invente rien. Décris, illustre, développe le style, et fais ressortir les émotions.
+  const promptUser = `
+Tu es chargé de rédiger un **récit de vie biographique** à partir de réponses à une interview.
 
-Réponse : "${contenu}"`;
+🎯 Objectif : Écrire un **texte structuré, romancé, divisé en chapitres**.
 
-    console.log(`✏️ Génération du bloc ${i + 1} / ${blocks.length}`);
+🎨 Style :
+- Littéraire mais accessible, avec une narration vivante.
+- Aucun retour à la ligne ou liste brute : uniquement du texte fluide.
+- Évite le tutoiement ou vouvoiement. Ne t’adresse pas à la personne directement.
 
-    try {
-      const resBloc = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-4o",
-          temperature: 1.1,
-          messages: [
-            { role: "system", content: "Tu es un écrivain biographique qui développe chaque souvenir avec chaleur et style." },
-            { role: "user", content: prompt }
-          ]
-        })
-      });
+📚 Structure :
+- Organise le récit en **chapitres clairs, d'une page minmum**, avec des titres pertinents.
+- Développe chaque souvenir ou anecdote.
+- Si une réponse est courte, utilise-la comme point de départ pour un développement émotionnel ou descriptif.
 
-      const blocJson = await resBloc.json();
-      const texte = blocJson?.choices?.[0]?.message?.content?.trim();
-      if (texte && texte.length > 50) {
-        chapitreParReponse.push(texte);
-      } else {
-        console.warn(`⚠️ Bloc ${i + 1} trop court ou vide.`);
-      }
-
-    } catch (err) {
-      console.error(`❌ Erreur pendant la génération du bloc ${i + 1} :`, err);
-    }
-  }
-
-  console.log("🔁 Fusion des blocs générés...");
-
-  const promptFinal = `Voici plusieurs fragments de récits biographiques. Unifie-les en un texte littéraire fluide, structuré en chapitres cohérents avec titres. Développe les transitions, harmonise le ton, et garde une narration chaleureuse et humaine.
-
-Fragments :
-
-${chapitreParReponse.map((c, i) => `Chapitre ${i + 1} :\n${c}`).join("\n\n")}`;
+💬 Matière à exploiter :
+${historique
+    .filter(m => m.role === 'user')
+    .map(m => m.content.trim())
+    .join("\n\n")}
+  `;
 
   try {
-    const resFinal = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -70,26 +45,27 @@ ${chapitreParReponse.map((c, i) => `Chapitre ${i + 1} :\n${c}`).join("\n\n")}`;
       },
       body: JSON.stringify({
         model: "gpt-4o",
-        temperature: 1.1,
+        temperature: 1.3,
         messages: [
-          { role: "system", content: "Tu es un biographe professionnel, humain et inspiré." },
-          { role: "user", content: promptFinal }
+          { role: "system", content: promptSysteme },
+          { role: "user", content: promptUser }
         ]
       })
     });
 
-    const finalJson = await resFinal.json();
-    const texteFinal = finalJson?.choices?.[0]?.message?.content?.trim();
+    const data = await response.json();
+    const texteFinal = data?.choices?.[0]?.message?.content?.trim();
 
-    if (!texteFinal || texteFinal.length < 300) {
-      return res.status(500).json({ message: "Le texte final est vide ou trop court." });
+    if (!texteFinal || texteFinal.length < 100) {
+      console.warn("⚠️ Texte généré trop court ou vide.");
+      return res.status(500).json({ message: "Le texte généré est vide ou trop court." });
     }
 
-    console.log("✅ Texte final généré avec succès.");
+    console.log("✅ Texte généré avec succès. Longueur :", texteFinal.length);
     res.status(200).json({ texte: texteFinal });
 
   } catch (err) {
-    console.error("❌ Erreur pendant la fusion finale :", err);
-    res.status(500).json({ message: "Erreur serveur pendant la génération finale." });
+    console.error("❌ Erreur pendant la génération :", err);
+    res.status(500).json({ message: "Erreur serveur pendant la génération." });
   }
 }
