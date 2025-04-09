@@ -259,12 +259,27 @@ async function genererLivre() {
   btn.disabled = true;
   btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Génération...`;
 
-  console.log("📥 Début récupération des réponses utilisateur...");
+  console.log("🚀 Début de la génération du livre...");
 
-  const reponsesUniques = historique
-    .filter(m => m.role === 'user')
-    .map((m, i) => `${i + 1}. ${m.content.trim()}`);
+  const segments = [];
+  let segmentIndex = 0;
 
+  // Diviser le contenu en segments
+  for (let i = 0; i < historique.length; i++) {
+    const q = historique[i];
+    const r = historique[i + 1];
+
+    if (q?.role === 'assistant' && r?.role === 'user') {
+      // Ajouter les réponses brutes dans des segments
+      const segment = `Q: ${q.content.trim()}\nR: ${r.content.trim()}`;
+      segments.push(segment);
+      i++; // Sauter la réponse déjà traitée
+    }
+  }
+
+  console.log("📦 Segments créés. Nombre de segments :", segments.length);
+
+  // Créer le prompt final
   const prompt = `
 Voici une série de réponses fournies par une personne dans le cadre d’une interview biographique.
 
@@ -274,10 +289,10 @@ Ta mission :
 - N’invente rien. Ne reformule pas les questions. Ne copie pas les numéros. Utilise **uniquement** les éléments ci-dessous.
 
 Réponses :
-${reponsesUniques.join('\n\n')}
+${segments.join('\n\n')}
 `;
 
-  console.log("📤 Prompt envoyé à l’API :", prompt);
+  console.log("📤 PROMPT envoyé à l'API GPT:", prompt);
 
   try {
     const response = await fetch("/api/chat", {
@@ -288,7 +303,7 @@ ${reponsesUniques.join('\n\n')}
           {
             role: "system",
             content:
-              "Tu es un biographe professionnel. Rédige un récit fluide, littéraire, chronologique et humain à partir des réponses suivantes. Ne copie pas les questions, raconte la vie de la personne comme dans un vrai livre."
+              "Tu es un biographe professionnel. Rédige un récit fluide, littéraire, chronologique et humain à partir des réponses suivantes. Ne copie pas les questions, raconte l'histoire comme dans un vrai livre."
           },
           { role: "user", content: prompt }
         ]
@@ -329,7 +344,6 @@ ${reponsesUniques.join('\n\n')}
     btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
   }
 }
-
 
     async function sauvegarder() {
       status.textContent = "⏳ Sauvegarde en cours...";
