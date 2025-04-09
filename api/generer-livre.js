@@ -10,30 +10,31 @@ export default async function handler(req, res) {
     return res.status(400).json({ message: 'Clé API ou historique manquant/invalide' });
   }
 
-  console.log("🚀 Envoi de l’historique complet à OpenAI...");
+  console.log("🚀 Envoi à OpenAI - Nombre de réponses :", historique.length);
 
-  const promptSysteme = `Tu es un biographe professionnel. 
-Tu écris un **chapitre de livre biographique** à partir d'une **interview complète**.
-Tu dois :
-- Écrire **à la troisième personne**, comme un narrateur extérieur (jamais "vous").
-- Suivre un **style littéraire fluide et vivant**
-- Inclure **des détails concrets, anecdotes, émotions**.
-- Tu peux reformuler les réponses, **les approfondir**, **créer une histoire plus ettofée auour des éléments reçus**
-- **Raconter une histoire vraie**, humaine, sincère.`;
+  const promptSysteme = "Tu es un biographe professionnel. Ton style est littéraire, fluide et chaleureux.";
 
-  const reponsesUtiles = historique
+  const promptUser = `
+Tu es chargé de rédiger un **récit de vie biographique** à partir de réponses à une interview.
+
+🎯 Objectif : Écrire un **texte structuré, romancé, divisé en chapitres**.
+
+🎨 Style :
+- Littéraire mais accessible, avec une narration vivante.
+- Aucun retour à la ligne ou liste brute : uniquement du texte fluide.
+- Évite le tutoiement ou vouvoiement. Ne t’adresse pas à la personne directement.
+
+📚 Structure :
+- Organise le récit en **chapitres clairs**, avec des titres pertinents.
+- Développe chaque souvenir ou anecdote.
+- Si une réponse est courte, utilise-la comme point de départ pour un développement émotionnel ou descriptif.
+
+💬 Matière à exploiter :
+${historique
     .filter(m => m.role === 'user')
     .map(m => m.content.trim())
-    .filter(Boolean)
-    .join("\n\n");
-
-  const promptUser = `Voici les réponses brutes d’une interview biographique.
-Rédige un **chapitre fluide, chaleureux et vivant** à partir de ces éléments :
-
-${reponsesUtiles}
-`;
-
-  console.log("📤 Prompt utilisateur envoyé à l'API :\n", promptUser.slice(0, 3000)); // tronqué pour éviter de saturer les logs
+    .join("\n\n")}
+  `;
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -45,7 +46,6 @@ ${reponsesUtiles}
       body: JSON.stringify({
         model: "gpt-4o",
         temperature: 1.1,
-        max_tokens: 2000,
         messages: [
           { role: "system", content: promptSysteme },
           { role: "user", content: promptUser }
@@ -56,11 +56,12 @@ ${reponsesUtiles}
     const data = await response.json();
     const texteFinal = data?.choices?.[0]?.message?.content?.trim();
 
-    if (!texteFinal || texteFinal.length < 200) {
+    if (!texteFinal || texteFinal.length < 100) {
+      console.warn("⚠️ Texte généré trop court ou vide.");
       return res.status(500).json({ message: "Le texte généré est vide ou trop court." });
     }
 
-    console.log("✅ Texte généré avec succès.");
+    console.log("✅ Texte généré avec succès. Longueur :", texteFinal.length);
     res.status(200).json({ texte: texteFinal });
 
   } catch (err) {
