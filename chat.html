@@ -247,7 +247,7 @@ const data = await response.json();
       sendMessage();
     }
 
-let isGenerating = false; // Pour éviter les clics multiples
+let isGenerating = false; // Empêche les clics multiples
 
 async function genererLivre() {
   if (!historique || historique.length < 4) {
@@ -259,20 +259,21 @@ async function genererLivre() {
   btn.disabled = true;
   btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Génération...`;
 
-const contenu = [];
+  // 🔁 Construction du prompt Q/R
+  const contenu = [];
 
-for (let i = 0; i < historique.length; i++) {
-  const current = historique[i];
-  const next = historique[i + 1];
+  for (let i = 0; i < historique.length; i++) {
+    const current = historique[i];
+    const next = historique[i + 1];
 
-  if (current.role === 'assistant' && next && next.role === 'user') {
-    contenu.push(`Q : ${current.content.trim()}\nR : ${next.content.trim()}`);
-    i++; // on saute la réponse déjà prise
+    if (current.role === 'assistant' && next && next.role === 'user') {
+      contenu.push(`Q : ${current.content.trim()}\nR : ${next.content.trim()}`);
+      i++; // On saute la réponse déjà prise
+    }
   }
-}
 
-const prompt = `
-Voici une série de questions-réponses tirées d’un entretien biographique. Pour chaque paire Q/R, écris un texte narratif fluide, chronologique et littéraire. 
+  const prompt = `
+Voici une série de questions-réponses tirées d’un entretien biographique. Pour chaque paire Q/R, écris un texte narratif fluide, chronologique et littéraire.
 
 N'invente aucun fait, mais tu peux développer les émotions, les sensations, les lieux ou ambiances. Ne reformule pas les questions. Raconte la vie de la personne comme une histoire.
 
@@ -280,18 +281,7 @@ Q/R :
 ${contenu.join('\n\n')}
 `;
 
-  const prompt = `
-Voici une série de réponses données par une personne dans le cadre d'une interview biographique.
-
-Utilise uniquement ce contenu pour rédiger un récit **narratif, chronologique, littéraire et humain** retraçant sa vie. Tu ne dois **pas copier les questions**, ni inventer d'éléments. Ne pas résumer, mais raconter comme dans un livre.
-
-Structure la narration comme une biographie fluide, en t'appuyant uniquement sur les éléments transmis ci-dessous.
-
-Réponses :
-${contenu}
-`;
-
-  // 🔍 DEBUG
+  // 🔍 Pour debug
   console.log("📤 PROMPT envoyé à l'API :", prompt);
 
   try {
@@ -303,7 +293,7 @@ ${contenu}
           {
             role: "system",
             content:
-              "Tu es un biographe professionnel. Rédige un récit littéraire, fluide et chronologique à partir de réponses utilisateur. N’invente rien, ne copie pas les questions. Utilise uniquement le contenu transmis."
+              "Tu es un biographe professionnel. Rédige un récit fluide, littéraire, chronologique et humain à partir des Q/R suivantes. Ne copie pas les questions, raconte l'histoire en continu comme dans un livre."
           },
           { role: "user", content: prompt }
         ]
@@ -312,9 +302,6 @@ ${contenu}
 
     const data = await response.json();
 
-    // 🔍 DEBUG
-    console.log("📩 Réponse reçue de l'API :", data);
-
     if (!data.reply || data.reply.trim().length === 0) {
       alert("❌ Le texte généré est vide. Vérifie que l’interview contient suffisamment de contenu.");
       btn.disabled = false;
@@ -322,7 +309,7 @@ ${contenu}
       return;
     }
 
-    // 📄 Génération PDF
+    // 🧾 Génération PDF avec jsPDF
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     const lines = doc.splitTextToSize(data.reply, 180);
@@ -340,8 +327,8 @@ ${contenu}
 
     doc.save("LifeBook.pdf");
   } catch (error) {
-    console.error("❌ Erreur lors de la génération :", error);
-    alert("❌ Erreur API. Regarde la console pour plus de détails.");
+    console.error("❌ Erreur API OpenAI :", error);
+    alert("❌ Erreur lors de la génération. Veuillez réessayer.");
   } finally {
     btn.disabled = false;
     btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
