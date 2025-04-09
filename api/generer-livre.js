@@ -1,4 +1,6 @@
 // 🔹 Version backend segmentée avec prompt renforcé pour chaque bloc
+// 🔸 Sécurisation JSON + découpage en blocs de 2 pour éviter timeout
+
 declare const fetch: typeof globalThis.fetch;
 
 export default async function handler(req, res) {
@@ -13,16 +15,13 @@ export default async function handler(req, res) {
     return res.status(400).json({ message: 'Clé API ou historique manquant/invalide' });
   }
 
-  // Étape 1 : Extraction des réponses utilisateur
   const reponses = historique.filter(msg => msg.role === 'user').map(msg => msg.content.trim());
 
-  // Étape 2 : Segmentation intelligente (2 ou 3 par bloc pour minimiser le nombre d'appels)
   const groupes = [];
-  for (let i = 0; i < reponses.length; i += 3) {
-    groupes.push(reponses.slice(i, i + 3).join("\n\n"));
+  for (let i = 0; i < reponses.length; i += 2) {
+    groupes.push(reponses.slice(i, i + 2).join("\n\n"));
   }
 
-  // Prompt très clair et renforcement du style pour chaque bloc
   const promptSysteme = `Tu es un biographe professionnel. Tu écris une biographie à partir de fragments de souvenirs. Ton style est : littéraire, fluide, humain, sobre, évocateur. Tu n'inventes rien. Tu racontes la vie comme une histoire touchante.`;
 
   const promptUserBase = `Voici un extrait de réponses biographiques.
@@ -54,9 +53,16 @@ Contenu :\n`;
         })
       });
 
-      const data = await response.json();
-      const texte = data?.choices?.[0]?.message?.content;
-      if (texte) morceaux.push(texte.trim());
+      const textRaw = await response.text();
+      try {
+        const data = JSON.parse(textRaw);
+        const texte = data?.choices?.[0]?.message?.content;
+        if (texte) morceaux.push(texte.trim());
+      } catch (jsonErr) {
+        console.error("❌ Erreur JSON (contenu brut) :", textRaw);
+        throw jsonErr;
+      }
+
     } catch (err) {
       console.error("Erreur sur un segment :", err);
     }
