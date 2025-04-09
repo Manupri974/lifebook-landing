@@ -1,4 +1,4 @@
-// /pages/api/generer-livre.js
+// /api/generer-livre.js
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -8,32 +8,49 @@ export default async function handler(req, res) {
   const apiKey = process.env.OPENAI_API_KEY;
   const { historique } = req.body;
 
-  if (!apiKey || !historique || !Array.isArray(historique)) {
-    return res.status(400).json({ message: 'Clé API ou historique manquant/invalide' });
+  if (!apiKey) {
+    console.error("❌ Clé API manquante");
+    return res.status(500).json({ message: "Clé API manquante" });
   }
 
-  // Étape 1 : Extraire uniquement les réponses utilisateur
-  const reponses = historique.filter(msg => msg.role === 'user').map(msg => msg.content.trim());
+  if (!historique || !Array.isArray(historique)) {
+    console.error("❌ Historique invalide :", historique);
+    return res.status(400).json({ message: "Historique invalide" });
+  }
 
-  // Étape 2 : Diviser en groupes de 4 réponses
+  console.log("📥 Réception de l'historique avec", historique.length, "messages");
+
+  // Étape 1 : extraire les réponses utilisateur
+  const reponses = historique
+    .filter(msg => msg.role === 'user')
+    .map(msg => msg.content.trim());
+
+  console.log("🧾 Réponses utilisateur extraites :", reponses.length);
+
+  // Étape 2 : regrouper les réponses par blocs de 4
   const groupes = [];
   for (let i = 0; i < reponses.length; i += 4) {
     groupes.push(reponses.slice(i, i + 4).join("\n\n"));
   }
 
+  console.log("📦 Groupes créés :", groupes.length);
+
   const promptSysteme = "Tu es un biographe professionnel.";
-  const promptUserBase = `Voici une partie d’interview biographique.
+  const promptUserBase = `
+Voici une partie d’interview biographique.
 
 Ta mission :
 - Rédiger un passage fluide, littéraire, humain et chronologique.
 - N’invente rien. N’ajoute aucune information.
 - N’utilise que le contenu ci-dessous.
 
-Contenu :\n`;
+Contenu :
+`;
 
   const morceaux = [];
 
-  for (const bloc of groupes) {
+  for (const [index, bloc] of groupes.entries()) {
+    console.log(`📤 Envoi du bloc ${index + 1}/${groupes.length} :`, bloc.slice(0, 80), "...");
     try {
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
@@ -48,24 +65,36 @@ Contenu :\n`;
             { role: "system", content: promptSysteme },
             { role: "user", content: promptUserBase + bloc }
           ]
-        })
+        }),
       });
 
       const data = await response.json();
-      const texte = data?.choices?.[0]?.message?.content;
+
+      if (!response.ok) {
+        console.error(`❌ Erreur OpenAI (bloc ${index + 1}) :`, data);
+        continue;
+      }
+
+      const texte = data.choices?.[0]?.message?.content;
       if (texte) {
         morceaux.push(texte.trim());
+        console.log(`✅ Segment ${index + 1} généré.`);
+      } else {
+        console.warn(`⚠️ Pas de texte généré pour le bloc ${index + 1}.`);
       }
+
     } catch (err) {
-      console.error("Erreur lors de la génération d’un segment :", err);
+      console.error(`❌ Erreur pendant la génération du bloc ${index + 1} :`, err);
     }
   }
 
   const texteFinal = morceaux.join("\n\n");
 
+  console.log("📘 Texte final généré, longueur :", texteFinal.length);
+
   if (!texteFinal || texteFinal.length < 100) {
     return res.status(500).json({ message: "Le texte généré est trop court ou vide." });
   }
 
-  res.status(200).json({ texte: texteFinal });
+  return res.status(200).json({ texte: texteFinal });
 }
