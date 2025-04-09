@@ -4,18 +4,19 @@ export default async function handler(req, res) {
   const { question, reponse } = req.body;
   const apiKey = process.env.OPENAI_API_KEY;
 
-  if (!question || !reponse) return res.status(400).json({ error: "Paramètres manquants" });
+  if (!reponse) return res.status(400).json({ error: "Paramètre 'reponse' manquant" });
   if (!apiKey) return res.status(500).json({ error: "Clé API manquante" });
 
   const prompt = `
-Tu es un biographe attentif. Voici une question d’interview et une réponse donnée par la personne interrogée.
+Tu es un biographe professionnel.
 
-1. Dis-moi si la réponse est exploitable pour écrire un texte biographique (réponds uniquement par "oui" ou "non").
-2. Si ce n’est pas le cas, explique brièvement pourquoi.
-3. Si la réponse est valide, réécris-la dans un style narratif chaleureux et vivant, sans inventer de faits mais en ajoutant du style, du contexte ou des émotions si possible.
+Voici une réponse d’interview donnée par une personne. Ta mission est de transformer cette réponse en un paragraphe narratif, fluide, littéraire et chaleureux — sans ajouter d'éléments fictifs.
 
-Q : ${question}
-R : ${reponse}
+Tu ne dois pas reformuler la question, ni la mentionner. Tu dois uniquement écrire une version enrichie et romancée de la réponse, comme dans un livre.
+
+Voici la réponse brute :
+
+${reponse}
 `;
 
   try {
@@ -28,7 +29,7 @@ R : ${reponse}
       body: JSON.stringify({
         model: "gpt-4o",
         messages: [
-          { role: "system", content: "Tu es un biographe professionnel" },
+          { role: "system", content: "Tu es un biographe littéraire expert en récits de vie." },
           { role: "user", content: prompt }
         ],
         temperature: 1.1,
@@ -36,21 +37,11 @@ R : ${reponse}
     });
 
     const data = await openaiRes.json();
-    const fullText = data.choices?.[0]?.message?.content || "";
+    const output = data.choices?.[0]?.message?.content || "";
 
-    // 🔍 On essaie d’extraire uniquement la partie 3 (la réponse enrichie)
-    const match = fullText.match(/3\.\s*(.+)$/s);
-
-    if (!match) {
-      console.warn("⚠️ Réponse GPT non exploitable, contenu brut :", fullText);
-      return res.status(200).json({ resultat: null });
-    }
-
-    const enriched = match[1].trim();
-
-    return res.status(200).json({ resultat: enriched });
+    res.status(200).json({ resultat: output.trim() });
   } catch (err) {
     console.error("❌ Erreur enrichissement:", err);
-    return res.status(500).json({ error: "Erreur lors de l'appel à OpenAI" });
+    res.status(500).json({ error: "Erreur lors de l'appel à OpenAI" });
   }
 }
