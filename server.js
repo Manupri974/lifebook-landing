@@ -1,5 +1,5 @@
 import express from "express";
-import genererLivre from "./api/generer-livre.js";
+import { genererLivreHandler } from "./api/generer-livre.js"; // ✅ IMPORT NOMMÉ
 
 const app = express();
 app.use(express.json());
@@ -17,9 +17,8 @@ app.use((req, res, next) => {
   next();
 });
 
-app.post("/api/generer-livre", genererLivre);
+app.post("/api/generer-livre", genererLivreHandler); // ✅ UTILISE LA FONCTION IMPORTÉE
 
-// Render utilise automatiquement ce port
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
