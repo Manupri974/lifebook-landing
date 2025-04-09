@@ -247,45 +247,36 @@ const data = await response.json();
       sendMessage();
     }
 
-let isGenerating = false;
+let isGenerating = false; // Pour éviter les clics multiples
 
 async function genererLivre() {
   if (!historique || historique.length < 4) {
     alert("⛔️ Pas assez de contenu pour générer un livre. Complétez plus de réponses.");
     return;
   }
-console.log("📚 Historique de la conversation :", historique);
+
   const btn = document.getElementById("generateBtn");
   btn.disabled = true;
   btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Génération...`;
 
-  // 🧠 Étape 1 : récupérer uniquement les réponses de l'utilisateur
-  const reponses = historique
+  // 🔍 Ne garder que les réponses de l'utilisateur (role === 'user')
+  const contenu = historique
     .filter(m => m.role === 'user')
     .map((m, i) => `${i + 1}. ${m.content.trim()}`)
     .join('\n\n');
 
-  // 🧠 Étape 2 : construire le prompt clair et cadré
   const prompt = `
-Voici une série de réponses données par une personne interrogée dans le cadre d’un projet de biographie personnelle.
+Voici une série de réponses données par une personne dans le cadre d'une interview biographique.
 
-À partir de ces réponses uniquement, rédige un **récit biographique littéraire, fluide, structuré et humain**.
+Utilise uniquement ce contenu pour rédiger un récit **narratif, chronologique, littéraire et humain** retraçant sa vie. Tu ne dois **pas copier les questions**, ni inventer d'éléments. Ne pas résumer, mais raconter comme dans un livre.
 
-Tu dois :
-- Reconstituer les grandes étapes de la vie (enfance, adolescence, famille, passions…)
-- Intégrer les éléments concrets et émotionnels dans la narration
-- Éviter les répétitions
-- Ne pas inventer de faits
-- Ne pas reformuler comme un robot
-- Ne pas énumérer les réponses
+Structure la narration comme une biographie fluide, en t'appuyant uniquement sur les éléments transmis ci-dessous.
 
-Voici les réponses à transformer en texte :
-
-${reponses}
+Réponses :
+${contenu}
 `;
 
   try {
-    console.log("📤 Messages envoyés à OpenAI :", messages);
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -294,7 +285,7 @@ ${reponses}
           {
             role: "system",
             content:
-              "Tu es un écrivain spécialisé en récits de vie. Ton style est chaleureux, humain et fluide. Tu vas recevoir une série de réponses et tu devras rédiger un texte biographique à partir de celles-ci."
+              "Tu es un biographe professionnel. Rédige un récit littéraire, fluide et chronologique à partir de réponses utilisateur. N’invente rien, ne copie pas les questions. Utilise uniquement le contenu transmis."
           },
           { role: "user", content: prompt }
         ]
@@ -310,7 +301,7 @@ ${reponses}
       return;
     }
 
-    // 📘 Génération du PDF
+    // 📄 Génération du PDF
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     const lines = doc.splitTextToSize(data.reply, 180);
@@ -335,7 +326,6 @@ ${reponses}
     btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
   }
 }
-
     async function sauvegarder() {
       status.textContent = "⏳ Sauvegarde en cours...";
       status.style.color = "black";
