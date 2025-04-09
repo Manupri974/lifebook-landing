@@ -259,27 +259,39 @@ async function genererLivre() {
   btn.disabled = true;
   btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Génération...`;
 
-  const contenu = historique
-    .filter(m => m.role === 'user' || m.role === 'assistant')
-    .map(m => m.role === 'assistant' ? `Q : ${m.content}` : `R : ${m.content}`)
-    .join('\n');
+  // 🧠 Étape 1 : regrouper les paires question/réponse
+  const qas = [];
+  let currentQ = null;
 
-  const prompt = `Voici l'interview d'une personne. Chaque bloc commence par une question (Q) suivie d'une réponse (R).\nUtilise-les pour rédiger un texte littéraire et émouvant, structuré chronologiquement, racontant la vie de la personne.\n\n${contenu}`;
+  for (const m of historique) {
+    if (m.role === "assistant") {
+      currentQ = m.content;
+    } else if (m.role === "user" && currentQ) {
+      qas.push({
+        question: currentQ.trim(),
+        answer: m.content.trim()
+      });
+      currentQ = null;
+    }
+  }
+
+  // 🧠 Étape 2 : construire le prompt structuré
+  const promptQA = qas.map((qa, index) => {
+    return `${index + 1}. Q : ${qa.question}\n   R : ${qa.answer}`;
+  }).join("\n\n");
+
+  const intro = `Tu es un écrivain biographe. À partir des questions et réponses suivantes, rédige un récit fluide, littéraire, humain et structuré comme un livre. N'invente rien. Intègre le sens des questions naturellement dans le récit sans les reformuler mot à mot.`;
+
+  const messages = [
+    { role: "system", content: intro },
+    { role: "user", content: promptQA }
+  ];
 
   try {
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        messages: [
-          {
-            role: "system",
-            content:
-              "Tu es un biographe professionnel. Rédige un récit fluide, littéraire, chronologique et humain à partir des Q/R suivantes. Ne copie pas les questions, raconte l'histoire en continu comme dans un livre."
-          },
-          { role: "user", content: prompt }
-        ]
-      })
+      body: JSON.stringify({ messages })
     });
 
     const data = await response.json();
@@ -291,6 +303,7 @@ async function genererLivre() {
       return;
     }
 
+    // 📘 Génération PDF
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     const lines = doc.splitTextToSize(data.reply, 180);
@@ -315,7 +328,6 @@ async function genererLivre() {
     btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
   }
 }
-
     async function sauvegarder() {
       status.textContent = "⏳ Sauvegarde en cours...";
       status.style.color = "black";
