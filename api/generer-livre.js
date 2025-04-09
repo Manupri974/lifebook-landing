@@ -10,35 +10,35 @@ export default async function handler(req, res) {
     return res.status(400).json({ message: 'Clé API ou historique manquant/invalide' });
   }
 
-  console.log("🚀 Envoi de l’historique complet à OpenAI...");
+  console.log("🚀 Envoi de l’historique complet à OpenAI (biographie complète)");
 
-  const reponsesUtilisateur = historique
+  // On extrait toutes les réponses utilisateur
+  const contenuUtilisateur = historique
     .filter(msg => msg.role === 'user')
     .map(msg => msg.content.trim())
     .join("\n\n");
 
-  const promptSysteme = `
-Tu es un biographe professionnel.
-Ton style est littéraire, fluide, chaleureux, mais toujours clair et humain.
-Tu sais transformer des souvenirs bruts en récits vivants et touchants.
-`;
-
+  const promptSysteme = `Tu es un biographe professionnel, littéraire et humain.`;
+  
   const promptUser = `
-Voici l’ensemble des réponses d’une interview biographique.
+Voici une interview biographique d'une personne. 
 
 Ta mission :
-- Écris un récit narratif structuré et fluide à partir des réponses.
-- Donne du rythme et de la profondeur au texte.
-- Ne reformule pas les questions.
-- N’invente rien.
-- Intègre tous les éléments concrets : lieux, dates, objets, anecdotes, émotions.
-- Donne une unité stylistique à l’ensemble, comme un vrai chapitre de livre.
+- Rédige une **biographie complète** à partir de ces réponses.
+- Utilise un **style littéraire fluide, expressif et chaleureux**.
+- Adopte le **ton de la troisième personne** (ex: "Jacques est né en 1956...").
+- Structure le récit de manière **chronologique**.
+- **N’oublie aucun élément** mentionné dans les réponses.
+- **Brode** autour des anecdotes et souvenirs pour créer un texte **riche, nuancé et cohérent**, comme un chapitre de roman.
+- N’invente rien, ne reformule pas les questions. Utilise uniquement les réponses comme matière première.
 
-Réponses :
-${reponsesUtilisateur}
+Voici les réponses de l’interview :
+
+${contenuUtilisateur}
 `;
 
-  console.log("📤 Prompt envoyé à l’API :\n", promptUser);
+  // 👀 Voir le prompt complet dans la console
+  console.log("🧾 Prompt envoyé à OpenAI :\n", promptUser);
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -61,7 +61,6 @@ ${reponsesUtilisateur}
     const texteFinal = data?.choices?.[0]?.message?.content?.trim();
 
     if (!texteFinal || texteFinal.length < 100) {
-      console.warn("⚠️ Texte trop court :", texteFinal);
       return res.status(500).json({ message: "Le texte généré est vide ou trop court." });
     }
 
