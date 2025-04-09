@@ -285,6 +285,7 @@ ${reponses}
 `;
 
   try {
+    console.log("📤 Messages envoyés à OpenAI :", messages);
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
