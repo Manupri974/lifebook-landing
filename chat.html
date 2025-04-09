@@ -472,7 +472,7 @@ async function initChat() {
       afficher("LifeBook", data.reply, "bot");
       historique.push({ role: "assistant", content: data.reply });
 
-      // Lancer voix
+      // Lecture vocale
       fetch("/api/voice", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -488,18 +488,22 @@ async function initChat() {
     console.error("❌ Erreur globale dans initChat :", err);
     afficher("LifeBook", "⚠️ Une erreur s’est produite au lancement du chat. Vérifiez votre connexion ou réessayez plus tard.", "bot");
   }
+}
 
-    document.getElementById("sendBtn").addEventListener("click", sendMessage);
-    document.getElementById("skipBtn").addEventListener("click", passerQuestion);
-    document.getElementById("generateBtn").addEventListener("click", genererLivre);
-    document.getElementById("saveButton").addEventListener("click", sauvegarder);
-    document.getElementById("speechButton").addEventListener("click", toggleRecording);
-    document.getElementById("userInput").addEventListener("keypress", e => {
-      if (e.key === "Enter") sendMessage();
-    });
+// ✅ Événements
+document.getElementById("sendBtn").addEventListener("click", sendMessage);
+document.getElementById("skipBtn").addEventListener("click", passerQuestion);
+document.getElementById("generateBtn").addEventListener("click", genererLivre);
+document.getElementById("saveButton").addEventListener("click", sauvegarder);
+document.getElementById("speechButton").addEventListener("click", toggleRecording);
+document.getElementById("userInput").addEventListener("keypress", e => {
+  if (e.key === "Enter") sendMessage();
+});
 
-    window.onload = initChat;
-  </script>
+// ✅ Démarrage
+window.onload = initChat;
+</script>
+
 </div> <!-- FIN DE #chat -->
 </body>
 </html>
