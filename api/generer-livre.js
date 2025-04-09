@@ -1,11 +1,15 @@
 import fetch from "node-fetch";
+import { config } from "dotenv";
 
-export async function genererLivreHandler(req, res) {
+config();
+
+const apiKey = process.env.OPENAI_API_KEY;
+
+export default async function genererLivre(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Méthode non autorisée' });
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
   const { historique } = req.body;
 
   if (!apiKey || !historique || !Array.isArray(historique)) {
