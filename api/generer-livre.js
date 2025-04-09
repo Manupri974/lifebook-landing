@@ -17,7 +17,6 @@ Tu écris un **chapitre de livre biographique** à partir d'une **interview comp
 Tu dois :
 - Écrire **à la troisième personne**, comme un narrateur extérieur (jamais "vous").
 - Suivre un **style littéraire fluide et vivant**
-- Tu dois utiliser **TOUTES les réponses** qui te sont fournies, tant qu'elles **servent à l'histoire**
 - Inclure **des détails concrets, anecdotes, émotions**.
 - Tu peux reformuler les réponses, **les approfondir**, **créer une histoire plus ettofée auour des éléments reçus**
 - **Raconter une histoire vraie**, humaine, sincère.`;
