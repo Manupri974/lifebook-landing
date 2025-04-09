@@ -268,7 +268,7 @@ async function genererLivre() {
 
   try {
     console.log("🚀 Envoi de l’historique complet au backend...");
-    
+
     const response = await fetch("/api/generer-livre", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -282,27 +282,26 @@ async function genererLivre() {
     try {
       data = JSON.parse(rawText);
     } catch (err) {
-      console.error("❌ Erreur JSON :", err);
-      alert("⚠️ Erreur lors du traitement de la réponse. Détail dans la console.");
-      btn.disabled = false;
-      btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
+      console.error("❌ Erreur de parsing JSON :", err);
+      alert("⚠️ La réponse du serveur n’a pas pu être interprétée. Regarde la console.");
       return;
     }
 
-    const texteFinal = data.texte;
-    if (!texteFinal || texteFinal.length < 100) {
+    if (!data || !data.texte || data.texte.trim().length < 100) {
+      console.warn("⚠️ Réponse invalide ou trop courte :", data);
       alert("❌ Le texte généré est trop court. Vérifie les réponses.");
-      btn.disabled = false;
-      btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
       return;
     }
 
+    const texteFinal = data.texte.trim();
     console.log("📘 Texte final généré :", texteFinal);
 
+    // 🧾 Génération du PDF
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     const lines = doc.splitTextToSize(texteFinal, 180);
     let y = 20;
+
     for (const line of lines) {
       doc.text(line, 15, y);
       y += 7;
@@ -315,13 +314,14 @@ async function genererLivre() {
     doc.save("LifeBook.pdf");
 
   } catch (error) {
-    console.error("❌ Erreur lors de la génération du livre :", error);
-    alert("Erreur lors de la génération. Détail dans la console.");
+    console.error("❌ Erreur lors de la génération :", error);
+    alert("❌ Une erreur est survenue pendant la génération. Voir la console.");
   } finally {
     btn.disabled = false;
     btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
   }
 }
+
 
     async function sauvegarder() {
       status.textContent = "⏳ Sauvegarde en cours...";
