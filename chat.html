@@ -246,7 +246,6 @@ const data = await response.json();
       historique.push({ role: "user", content: "passons" });
       sendMessage();
     }
-
 let isGenerating = false;
 
 async function genererLivre() {
@@ -264,7 +263,7 @@ async function genererLivre() {
   const segments = [];
   let segmentIndex = 0;
 
-  // Diviser le contenu en segments
+  // Diviser les réponses en segments plus petits
   for (let i = 0; i < historique.length; i++) {
     const q = historique[i];
     const r = historique[i + 1];
@@ -344,6 +343,7 @@ ${segments.join('\n\n')}
     btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
   }
 }
+
 
     async function sauvegarder() {
       status.textContent = "⏳ Sauvegarde en cours...";
