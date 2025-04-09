@@ -25,12 +25,12 @@ Voici une interview biographique d'une personne.
 
 Ta mission :
 - Rédige une **biographie complète** à partir de ces réponses.
-- Utilise un **style littéraire fluide, expressif et chaleureux**.
+- Utilise un **style littéraire classique et appuyé
 - Adopte le **ton de la troisième personne** (ex: "Jacques est né en 1956...").
 - Structure le récit de manière **chronologique**.
 - **N’oublie aucun élément** mentionné dans les réponses.
 - **Brode** autour des anecdotes et souvenirs pour créer un texte **riche, nuancé et cohérent**, comme un chapitre de roman.
-- N’invente rien, ne reformule pas les questions. Utilise uniquement les réponses comme matière première.
+- Fais preuve de liberté dans ton interprétation pour générer un récit captivant d'au moins 10 pages
 
 Voici les réponses de l’interview :
 
@@ -49,7 +49,7 @@ ${contenuUtilisateur}
       },
       body: JSON.stringify({
         model: "gpt-4o",
-        temperature: 1.1,
+        temperature: 1.2,
         messages: [
           { role: "system", content: promptSysteme },
           { role: "user", content: promptUser }
