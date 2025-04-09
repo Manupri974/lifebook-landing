@@ -259,10 +259,26 @@ async function genererLivre() {
   btn.disabled = true;
   btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Génération...`;
 
-  const contenu = historique
-    .filter(m => m.role === 'user')
-    .map((m, i) => `${i + 1}. ${m.content.trim()}`)
-    .join('\n\n');
+const contenu = [];
+
+for (let i = 0; i < historique.length; i++) {
+  const current = historique[i];
+  const next = historique[i + 1];
+
+  if (current.role === 'assistant' && next && next.role === 'user') {
+    contenu.push(`Q : ${current.content.trim()}\nR : ${next.content.trim()}`);
+    i++; // on saute la réponse déjà prise
+  }
+}
+
+const prompt = `
+Voici une série de questions-réponses tirées d’un entretien biographique. Pour chaque paire Q/R, écris un texte narratif fluide, chronologique et littéraire. 
+
+N'invente aucun fait, mais tu peux développer les émotions, les sensations, les lieux ou ambiances. Ne reformule pas les questions. Raconte la vie de la personne comme une histoire.
+
+Q/R :
+${contenu.join('\n\n')}
+`;
 
   const prompt = `
 Voici une série de réponses données par une personne dans le cadre d'une interview biographique.
