@@ -259,7 +259,6 @@ async function genererLivre() {
   btn.disabled = true;
   btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Génération...`;
 
-  // 🔍 Ne garder que les réponses de l'utilisateur (role === 'user')
   const contenu = historique
     .filter(m => m.role === 'user')
     .map((m, i) => `${i + 1}. ${m.content.trim()}`)
@@ -275,6 +274,9 @@ Structure la narration comme une biographie fluide, en t'appuyant uniquement sur
 Réponses :
 ${contenu}
 `;
+
+  // 🔍 DEBUG
+  console.log("📤 PROMPT envoyé à l'API :", prompt);
 
   try {
     const response = await fetch("/api/chat", {
@@ -294,6 +296,9 @@ ${contenu}
 
     const data = await response.json();
 
+    // 🔍 DEBUG
+    console.log("📩 Réponse reçue de l'API :", data);
+
     if (!data.reply || data.reply.trim().length === 0) {
       alert("❌ Le texte généré est vide. Vérifie que l’interview contient suffisamment de contenu.");
       btn.disabled = false;
@@ -301,7 +306,7 @@ ${contenu}
       return;
     }
 
-    // 📄 Génération du PDF
+    // 📄 Génération PDF
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     const lines = doc.splitTextToSize(data.reply, 180);
@@ -319,8 +324,8 @@ ${contenu}
 
     doc.save("LifeBook.pdf");
   } catch (error) {
-    console.error("Erreur API OpenAI :", error);
-    alert("❌ Erreur lors de la génération. Veuillez réessayer.");
+    console.error("❌ Erreur lors de la génération :", error);
+    alert("❌ Erreur API. Regarde la console pour plus de détails.");
   } finally {
     btn.disabled = false;
     btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
