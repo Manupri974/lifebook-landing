@@ -1,3 +1,6 @@
+// 🔹 Version backend segmentée avec prompt renforcé pour chaque bloc
+declare const fetch: typeof globalThis.fetch;
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Méthode non autorisée' });
@@ -10,34 +13,31 @@ export default async function handler(req, res) {
     return res.status(400).json({ message: 'Clé API ou historique manquant/invalide' });
   }
 
-  console.log("🚀 Envoi de l’historique complet au backend…");
-
-  // Étape 1 : Extraire uniquement les réponses utilisateur
+  // Étape 1 : Extraction des réponses utilisateur
   const reponses = historique.filter(msg => msg.role === 'user').map(msg => msg.content.trim());
 
-  // Étape 2 : Découpage par blocs de 4 réponses
+  // Étape 2 : Segmentation intelligente (2 ou 3 par bloc pour minimiser le nombre d'appels)
   const groupes = [];
-  for (let i = 0; i < reponses.length; i += 4) {
-    groupes.push(reponses.slice(i, i + 4).join("\n\n"));
+  for (let i = 0; i < reponses.length; i += 3) {
+    groupes.push(reponses.slice(i, i + 3).join("\n\n"));
   }
 
-  // Étape 3 : Prompts
-  const promptSysteme = "Tu es un biographe professionnel, littéraire et humain.";
-  const promptUserBase = `Voici une partie d’interview biographique.
+  // Prompt très clair et renforcement du style pour chaque bloc
+  const promptSysteme = `Tu es un biographe professionnel. Tu écris une biographie à partir de fragments de souvenirs. Ton style est : littéraire, fluide, humain, sobre, évocateur. Tu n'inventes rien. Tu racontes la vie comme une histoire touchante.`;
+
+  const promptUserBase = `Voici un extrait de réponses biographiques.
 
 Ta mission :
-- Rédige un passage narratif fluide, chronologique et chaleureux à partir du contenu fourni.
-- Utilise un style littéraire simple mais expressif, humain, sans artifices.
-- Ne reformule pas les questions. N’invente rien. Utilise uniquement les éléments ci-dessous.
+- Rédiger un passage littéraire et humain, en intégrant les émotions et les détails.
+- Le style doit être fluide, profond et cohérent avec une biographie publiable.
+- Utilise uniquement le contenu ci-dessous (ne réinvente rien).
 
-Contenu :
-`;
+Contenu :\n`;
 
   const morceaux = [];
 
   for (const bloc of groupes) {
     try {
-      console.log("📤 Envoi d’un bloc de 4 réponses...");
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -56,23 +56,17 @@ Contenu :
 
       const data = await response.json();
       const texte = data?.choices?.[0]?.message?.content;
-      if (texte) {
-        morceaux.push(texte.trim());
-        console.log("✅ Bloc généré avec succès");
-      } else {
-        console.warn("⚠️ Aucun texte généré pour ce bloc.");
-      }
+      if (texte) morceaux.push(texte.trim());
     } catch (err) {
-      console.error("❌ Erreur pendant la génération d’un bloc :", err);
+      console.error("Erreur sur un segment :", err);
     }
   }
 
   const texteFinal = morceaux.join("\n\n");
 
   if (!texteFinal || texteFinal.length < 100) {
-    return res.status(500).json({ message: "Le texte généré est trop court ou vide." });
+    return res.status(500).json({ message: "Le texte généré est vide ou trop court." });
   }
 
-  console.log("📘 Texte final généré avec succès.");
   res.status(200).json({ texte: texteFinal });
 }
