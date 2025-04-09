@@ -15,10 +15,10 @@ export default async function handler(req, res) {
   // Étape 1 : Extraire uniquement les réponses utilisateur
   const reponses = historique.filter(msg => msg.role === 'user').map(msg => msg.content.trim());
 
-  // Étape 2 : Découpage par blocs de 2 réponses
+  // Étape 2 : Découpage par blocs de 1 réponses
   const groupes = [];
-  for (let i = 0; i < reponses.length; i += 2) {
-    groupes.push(reponses.slice(i, i + 2).join("\n\n"));
+  for (let i = 0; i < reponses.length; i += 1) {
+    groupes.push(reponses.slice(i, i + 1).join("\n\n"));
   }
 
   // Étape 3 : Prompts
@@ -37,7 +37,7 @@ Contenu :
 
   for (const bloc of groupes) {
     try {
-      console.log("📤 Envoi d’un bloc de 2 réponses...");
+      console.log("📤 Envoi d’un bloc de 1 réponses...");
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
