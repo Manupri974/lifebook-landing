@@ -199,49 +199,59 @@
       document.getElementById("progression").innerText = `Question ${count + 1} / 89`;
     }
 
-    async function sendMessage() {
-      const input = document.getElementById("userInput");
-      const text = input.value.trim();
-      if (!text) return;
-      afficher("Vous", text, "user");
-      historique.push({ role: "user", content: text });
-      input.value = "";
+async function sendMessage() {
+  const input = document.getElementById("userInput");
+  const text = input.value.trim();
+  if (!text) return;
 
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: historique })
-      });
+  afficher("Vous", text, "user");
+  historique.push({ role: "user", content: text });
+  input.value = "";
 
-if (!response.ok) {
-  const errorText = await response.text();
-  console.error("Erreur API OpenAI :", errorText);
-  alert("❌ Erreur API OpenAI : " + errorText);
-  btn.disabled = false;
-  btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
-  return;
-}
+  try {
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: historique })
+    });
 
-const data = await response.json();
-
-      const botText = data.texte;
-
-      afficher("LifeBook", botText, "bot");
-      historique.push({ role: "assistant", content: botText });
-      miseAJourProgression();
-
-      fetch("/api/voice", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: botText })
-      })
-        .then(res => res.blob())
-        .then(blob => {
-          const audio = new Audio(URL.createObjectURL(blob));
-          audio.play();
-        });
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Erreur API OpenAI :", errorText);
+      afficher("LifeBook", "❌ L’IA n’a pas répondu correctement. Réessayez.", "bot");
+      return;
     }
 
+    const data = await response.json();
+
+    if (!data.reply || typeof data.reply !== "string") {
+      console.error("Réponse mal formée :", data);
+      afficher("LifeBook", "❌ L’IA n’a pas répondu correctement. Réessayez.", "bot");
+      return;
+    }
+
+    const botText = data.reply;
+    afficher("LifeBook", botText, "bot");
+    historique.push({ role: "assistant", content: botText });
+    miseAJourProgression();
+
+    // Lecture vocale
+    fetch("/api/voice", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: botText })
+    })
+      .then(res => res.blob())
+      .then(blob => {
+        const audio = new Audio(URL.createObjectURL(blob));
+        audio.play();
+      });
+
+  } catch (err) {
+    console.error("❌ Erreur inattendue :", err);
+    afficher("LifeBook", "⚠️ Une erreur s’est produite. Vérifiez votre connexion ou réessayez.", "bot");
+  }
+}
     function passerQuestion() {
       historique.push({ role: "user", content: "passons" });
       sendMessage();
