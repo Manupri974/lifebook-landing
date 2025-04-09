@@ -18,11 +18,37 @@ export default async function handler(req, res) {
   const reponsesUtilisateur = historique.filter(m => m.role === "user").map(m => m.content.trim());
   console.log("🧩 Envoi à OpenAI - Nombre de réponses :", reponsesUtilisateur.length);
 
+  function detecterCategorie(texte) {
+    const categories = {
+      "Enfance": ["jouet", "maternelle", "parents", "école", "copain", "grandir", "naissance", "quartier"],
+      "Famille": ["mère", "père", "frère", "sœur", "famille", "grands-parents"],
+      "Adolescence": ["collège", "lycée", "ado", "premier amour", "amis d'enfance", "rébellion"],
+      "Études et travail": ["université", "études", "travail", "carrière", "job", "profession", "boulot"],
+      "Amour et relations": ["amour", "relation", "couple", "mariage", "partenaire"],
+      "Voyages": ["voyage", "pays", "ville", "étranger", "vacances"],
+      "Aujourd'hui": ["retraite", "aujourd'hui", "présent", "maintenant", "vieux", "actuel"]
+    };
+
+    for (const [categorie, mots] of Object.entries(categories)) {
+      for (const mot of mots) {
+        if (texte.toLowerCase().includes(mot)) return categorie;
+      }
+    }
+    return "Autres";
+  }
+
+  const groupes = {};
+  for (const reponse of reponsesUtilisateur) {
+    const categorie = detecterCategorie(reponse);
+    if (!groupes[categorie]) groupes[categorie] = [];
+    groupes[categorie].push(reponse);
+  }
+
   try {
     const paragraphes = [];
-
-    for (let i = 0; i < reponsesUtilisateur.length; i++) {
-      const prompt = `Voici une réponse donnée par une personne dans le cadre d'une interview biographique :\n"""\n${reponsesUtilisateur[i]}\n"""\n\nGénère un paragraphe littéraire, romancé et expressif autour de cette réponse. Utilise un style fluide, humain et chaleureux. Ne répète pas la réponse telle quelle, développe, brode autour. N'invente rien, mais enrichis subtilement. Ne donne pas de titre, juste un paragraphe.`;
+    for (const [categorie, reponses] of Object.entries(groupes)) {
+      const contenu = reponses.join("\n\n");
+      const prompt = `Voici un ensemble de réponses issues d'une interview biographique, portant sur le thème "${categorie}" :\n\n"""\n${contenu}\n"""\n\nTa mission :\n- Rédige un chapitre structuré, expressif et littéraire.\n- Utilise un style narratif fluide, humain et chaleureux.\n- Décris les lieux, les sentiments, les ambiances.\n- Ne reformule pas les questions, ne cite pas les réponses directement.\n- Enrichis subtilement avec des transitions naturelles.\n- Le chapitre doit faire entre 700 et 900 mots pour couvrir au moins une page complète en PDF.\n- Commence par un titre en majuscules.`;
 
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
@@ -42,10 +68,10 @@ export default async function handler(req, res) {
 
       const data = await response.json();
       const generated = data?.choices?.[0]?.message?.content?.trim();
-      if (generated && generated.length > 50) {
+      if (generated && generated.length > 100) {
         paragraphes.push(generated);
       } else {
-        console.warn(`⚠️ Réponse ignorée pour l'entrée ${i + 1}`);
+        console.warn(`⚠️ Chapitre ignoré pour le thème ${categorie}`);
       }
     }
 
