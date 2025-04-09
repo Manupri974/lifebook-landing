@@ -258,93 +258,97 @@ async function genererLivre() {
   btn.disabled = true;
   btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Génération...`;
 
-  console.log("🚀 Début de la génération du livre...");
+  console.log("🚀 Début de la génération segmentée...");
 
-  const segments = [];
-  let segmentIndex = 0;
-
-  // Diviser les réponses en segments plus petits
+  // 🔹 Étape 1 : Extraire uniquement les réponses utilisateur
+  const reponses = [];
   for (let i = 0; i < historique.length; i++) {
-    const q = historique[i];
-    const r = historique[i + 1];
-
-    if (q?.role === 'assistant' && r?.role === 'user') {
-      // Ajouter les réponses brutes dans des segments
-      const segment = `Q: ${q.content.trim()}\nR: ${r.content.trim()}`;
-      segments.push(segment);
-      i++; // Sauter la réponse déjà traitée
+    const msg = historique[i];
+    if (msg.role === "user") {
+      reponses.push(msg.content.trim());
     }
   }
 
-  console.log("📦 Segments créés. Nombre de segments :", segments.length);
+  // 🔹 Étape 2 : Couper en segments de 4 réponses max
+  const groupes = [];
+  for (let i = 0; i < reponses.length; i += 4) {
+    groupes.push(reponses.slice(i, i + 4).join("\n\n"));
+  }
 
-  // Créer le prompt final
-  const prompt = `
-Voici une série de réponses fournies par une personne dans le cadre d’une interview biographique.
+  // 🔹 Étape 3 : Prompt de base
+  const promptSysteme = "Tu es un biographe professionnel.";
+  const promptUserBase = `
+Voici une partie d’interview biographique.
 
 Ta mission :
-- Rédiger une biographie fluide, littéraire, humaine et **chronologique**.
-- Tu dois **raconter sa vie comme une histoire**, avec un style narratif sobre et chaleureux.
-- N’invente rien. Ne reformule pas les questions. Ne copie pas les numéros. Utilise **uniquement** les éléments ci-dessous.
+- Rédiger un passage fluide, littéraire, humain et chronologique.
+- N’invente rien. N’ajoute aucune information.
+- N’utilise que le contenu ci-dessous.
 
-Réponses :
-${segments.join('\n\n')}
+Contenu :
 `;
 
-  console.log("📤 PROMPT envoyé à l'API GPT:", prompt);
+  const morceaux = [];
 
-  try {
-    const response = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        messages: [
-          {
-            role: "system",
-            content:
-              "Tu es un biographe professionnel. Rédige un récit fluide, littéraire, chronologique et humain à partir des réponses suivantes. Ne copie pas les questions, raconte l'histoire comme dans un vrai livre."
-          },
-          { role: "user", content: prompt }
-        ]
-      })
-    });
+  // 🔹 Étape 4 : Génération pour chaque segment
+  for (const bloc of groupes) {
+    try {
+      console.log("📤 Envoi du bloc :", bloc.slice(0, 100) + "...");
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [
+            { role: "system", content: promptSysteme },
+            { role: "user", content: promptUserBase + bloc }
+          ]
+        })
+      });
 
-    const data = await response.json();
-
-    if (!data.reply || data.reply.trim().length === 0) {
-      alert("❌ Le texte généré est vide. Vérifie que l’interview contient suffisamment de contenu.");
-      btn.disabled = false;
-      btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
-      return;
-    }
-
-    console.log("📘 Texte généré :", data.reply);
-
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    const lines = doc.splitTextToSize(data.reply, 180);
-
-    let y = 20;
-    for (let i = 0; i < lines.length; i++) {
-      doc.text(lines[i], 15, y);
-      y += 7;
-      if (y > 280) {
-        doc.addPage();
-        y = 20;
+      const data = await response.json();
+      if (data?.reply) {
+        morceaux.push(data.reply.trim());
+        console.log("✅ Segment reçu");
+      } else {
+        console.warn("⚠️ Pas de texte généré pour un segment.");
       }
+    } catch (err) {
+      console.error("❌ Erreur segment :", err);
     }
+  }
 
-    doc.save("LifeBook.pdf");
-  } catch (error) {
-    console.error("❌ Erreur API OpenAI :", error);
-    alert("❌ Erreur lors de la génération. Veuillez réessayer.");
-  } finally {
+  // 🔹 Étape 5 : Assembler tous les segments
+  const texteFinal = morceaux.join("\n\n");
+
+  if (!texteFinal || texteFinal.length < 100) {
+    alert("❌ Le texte généré est trop court. Vérifie les réponses.");
     btn.disabled = false;
     btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
+    return;
   }
+
+  // 🔹 Étape 6 : Générer le PDF
+  console.log("📘 Texte final généré :", texteFinal);
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const lines = doc.splitTextToSize(texteFinal, 180);
+
+  let y = 20;
+  for (const line of lines) {
+    doc.text(line, 15, y);
+    y += 7;
+    if (y > 280) {
+      doc.addPage();
+      y = 20;
+    }
+  }
+
+  doc.save("LifeBook.pdf");
+
+  btn.disabled = false;
+  btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
 }
-
-
     async function sauvegarder() {
       status.textContent = "⏳ Sauvegarde en cours...";
       status.style.color = "black";
