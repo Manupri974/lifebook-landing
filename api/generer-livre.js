@@ -18,37 +18,22 @@ export default async function handler(req, res) {
   const reponsesUtilisateur = historique.filter(m => m.role === "user").map(m => m.content.trim());
   console.log("🧩 Envoi à OpenAI - Nombre de réponses :", reponsesUtilisateur.length);
 
-  function detecterCategorie(texte) {
-    const categories = {
-      "Enfance": ["jouet", "maternelle", "parents", "école", "copain", "grandir", "naissance", "quartier"],
-      "Famille": ["mère", "père", "frère", "sœur", "famille", "grands-parents"],
-      "Adolescence": ["collège", "lycée", "ado", "premier amour", "amis d'enfance", "rébellion"],
-      "Études et travail": ["université", "études", "travail", "carrière", "job", "profession", "boulot"],
-      "Amour et relations": ["amour", "relation", "couple", "mariage", "partenaire"],
-      "Voyages": ["voyage", "pays", "ville", "étranger", "vacances"],
-      "Aujourd'hui": ["retraite", "aujourd'hui", "présent", "maintenant", "vieux", "actuel"]
-    };
+  // Nombre de réponses par séquence
+  const tailleSequence = 3;
 
-    for (const [categorie, mots] of Object.entries(categories)) {
-      for (const mot of mots) {
-        if (texte.toLowerCase().includes(mot)) return categorie;
-      }
-    }
-    return "Autres";
-  }
-
-  const groupes = {};
-  for (const reponse of reponsesUtilisateur) {
-    const categorie = detecterCategorie(reponse);
-    if (!groupes[categorie]) groupes[categorie] = [];
-    groupes[categorie].push(reponse);
+  const sequences = [];
+  for (let i = 0; i < reponsesUtilisateur.length; i += tailleSequence) {
+    const bloc = reponsesUtilisateur.slice(i, i + tailleSequence);
+    if (bloc.length > 0) sequences.push(bloc);
   }
 
   try {
     const paragraphes = [];
-    for (const [categorie, reponses] of Object.entries(groupes)) {
-      const contenu = reponses.join("\n\n");
-      const prompt = `Voici un ensemble de réponses issues d'une interview biographique, portant sur le thème "${categorie}" :\n\n"""\n${contenu}\n"""\n\nTa mission :\n- Rédige un chapitre structuré, expressif et littéraire.\n- Utilise un style narratif fluide, humain et chaleureux.\n- Décris les lieux, les sentiments, les ambiances.\n- Ne reformule pas les questions, ne cite pas les réponses directement.\n- Enrichis subtilement avec des transitions naturelles.\n- Le chapitre doit faire entre 700 et 900 mots pour couvrir au moins une page complète en PDF.\n- Commence par un titre en majuscules.`;
+
+    for (let i = 0; i < sequences.length; i++) {
+      const contenu = sequences[i].join("\n\n");
+      const prompt = `Voici une séquence d'interview biographique. Ta mission :\n
+- Écris un passage narratif structuré, riche et fluide.\n- Utilise un style littéraire, humain, expressif.\n- Ne reformule pas les questions, inspire-toi uniquement des réponses.\n- Décris les émotions, les lieux, les ambiances.\n- Utilise des transitions naturelles.\n- Ce bloc doit faire entre 500 et 800 mots.\n\nContenu :\n"""\n${contenu}\n"""`;
 
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
@@ -60,7 +45,7 @@ export default async function handler(req, res) {
           model: "gpt-4o",
           temperature: 1.1,
           messages: [
-            { role: "system", content: "Tu es un écrivain professionnel de biographies humaines et littéraires." },
+            { role: "system", content: "Tu es un écrivain biographe talentueux, sensible et littéraire." },
             { role: "user", content: prompt }
           ]
         })
@@ -71,7 +56,7 @@ export default async function handler(req, res) {
       if (generated && generated.length > 100) {
         paragraphes.push(generated);
       } else {
-        console.warn(`⚠️ Chapitre ignoré pour le thème ${categorie}`);
+        console.warn(`⚠️ Bloc ignoré à la séquence ${i + 1}`);
       }
     }
 
