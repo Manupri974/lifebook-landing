@@ -1,12 +1,12 @@
 import express from "express";
-import { genererLivreHandler } from "./api/generer-livre.js"; // ✅ modifié ici
+import genererLivre from "./api/generer-livre.js";
 
 const app = express();
 app.use(express.json());
 
-// ✅ Middleware CORS
+// ✅ Middleware CORS - autorise tous les domaines
 app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "https://lifebook-landing.vercel.app");
+  res.setHeader("Access-Control-Allow-Origin", "*"); // 🔓 Ouverture totale (à restreindre en prod)
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
@@ -17,8 +17,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// ✅ utilisation de la fonction handler
-app.post("/api/generer-livre", genererLivreHandler);
+app.post("/api/generer-livre", genererLivre);
 
 // Render utilise automatiquement ce port
 const PORT = process.env.PORT || 3000;
