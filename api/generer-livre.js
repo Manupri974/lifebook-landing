@@ -12,16 +12,13 @@ export default async function handler(req, res) {
 
   console.log("🚀 Envoi de l’historique complet au backend…");
 
-  // Étape 1 : Extraire uniquement les réponses utilisateur
-  const reponses = historique.filter(msg => msg.role === 'user').map(msg => msg.content.trim());
+  const reponses = historique
+    .filter(msg => msg.role === 'user')
+    .map(msg => msg.content.trim())
+    .filter(Boolean); // évite les vides
 
-  // Étape 2 : Découpage par blocs de 1 réponses
-  const groupes = [];
-  for (let i = 0; i < reponses.length; i += 1) {
-    groupes.push(reponses.slice(i, i + 1).join("\n\n"));
-  }
+  const groupes = reponses.map((r) => r); // un bloc = une réponse
 
-  // Étape 3 : Prompts
   const promptSysteme = "Tu es un biographe professionnel, littéraire et humain.";
   const promptUserBase = `Voici une partie d’interview biographique.
 
@@ -33,39 +30,38 @@ Ta mission :
 Contenu :
 `;
 
-  const morceaux = [];
+  const results = await Promise.allSettled(
+    groupes.map(async (bloc, i) => {
+      try {
+        console.log(`📤 Bloc ${i + 1}/${groupes.length} envoyé`);
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: "gpt-4o",
+            temperature: 1.2,
+            messages: [
+              { role: "system", content: promptSysteme },
+              { role: "user", content: promptUserBase + bloc }
+            ]
+          }),
+        });
 
-  for (const bloc of groupes) {
-    try {
-      console.log("📤 Envoi d’un bloc de 1 réponses...");
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-4o",
-          temperature: 1.2,
-          messages: [
-            { role: "system", content: promptSysteme },
-            { role: "user", content: promptUserBase + bloc }
-          ]
-        })
-      });
-
-      const data = await response.json();
-      const texte = data?.choices?.[0]?.message?.content;
-      if (texte) {
-        morceaux.push(texte.trim());
-        console.log("✅ Bloc généré avec succès");
-      } else {
-        console.warn("⚠️ Aucun texte généré pour ce bloc.");
+        const data = await response.json();
+        return data?.choices?.[0]?.message?.content?.trim() || "";
+      } catch (err) {
+        console.error(`❌ Erreur sur le bloc ${i + 1} :`, err);
+        return "";
       }
-    } catch (err) {
-      console.error("❌ Erreur pendant la génération d’un bloc :", err);
-    }
-  }
+    })
+  );
+
+  const morceaux = results
+    .filter(r => r.status === "fulfilled" && r.value && r.value.length > 0)
+    .map(r => r.value);
 
   const texteFinal = morceaux.join("\n\n");
 
@@ -74,5 +70,5 @@ Contenu :
   }
 
   console.log("📘 Texte final généré avec succès.");
-  res.status(200).json({ texte: texteFinal });
+  return res.status(200).json({ texte: texteFinal });
 }
