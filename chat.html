@@ -418,69 +418,76 @@ async function genererLivre() {
         button.classList.remove("recording");
         recording = false;
       }
-       }
-    async function initChat() {
-      const params = new URLSearchParams(window.location.search);
-      interviewId = params.get("id");
+async function initChat() {
+  const params = new URLSearchParams(window.location.search);
+  interviewId = params.get("id");
 
-      try {
-        if (interviewId) {
-          const { data, error } = await supabase
-            .from("responses")
-            .select("content")
-            .eq("id", interviewId)
-            .single();
+  try {
+    if (interviewId) {
+      const { data, error } = await supabase
+        .from("responses")
+        .select("content")
+        .eq("id", interviewId)
+        .single();
 
-          console.log("🔁 Chargement Supabase :", data);
-          if (error || !data?.content || !Array.isArray(data.content)) {
-            afficher("LifeBook", "❌ Impossible de charger l’interview existante. Essayez à nouveau plus tard.", "bot");
-            return;
-          }
+      console.log("📦 Données chargées depuis Supabase :", data);
 
-          historique = data.content;
-          historique.forEach(msg => {
-            afficher(msg.role === "user" ? "Vous" : "LifeBook", msg.content, msg.role);
-          });
-          miseAJourProgression();
-        } else {
-          // Première utilisation : appel initial à l'API
-          const response = await fetch("/api/chat", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ messages: [] })
-          });
-
-          if (!response.ok) {
-            throw new Error("Erreur lors de la requête initiale");
-          }
-
-          const data = await response.json();
-          console.log("📨 Réponse API /chat :", data);
-
-          if (!data.reply || typeof data.reply !== "string") {
-            afficher("LifeBook", "❌ L’IA n’a pas répondu correctement. Réessayez.", "bot");
-            return;
-          }
-
-          afficher("LifeBook", data.reply, "bot");
-          historique.push({ role: "assistant", content: data.reply });
-
-          fetch("/api/voice", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: data.reply })
-          })
-            .then(res => res.blob())
-            .then(blob => {
-              const audio = new Audio(URL.createObjectURL(blob));
-              audio.play();
-            });
-        }
-      } catch (err) {
-        console.error("❌ Erreur dans initChat :", err);
-        afficher("LifeBook", "⚠️ Une erreur s’est produite au lancement du chat. Vérifiez votre connexion ou réessayez plus tard.", "bot");
+      if (error || !data?.content || !Array.isArray(data.content)) {
+        afficher("LifeBook", "❌ Impossible de charger l’interview existante. Essayez à nouveau plus tard.", "bot");
+        console.error("⚠️ Erreur Supabase :", error);
+        return;
       }
+
+      historique = data.content;
+      historique.forEach(msg => {
+        afficher(msg.role === "user" ? "Vous" : "LifeBook", msg.content, msg.role);
+      });
+      miseAJourProgression();
+    } else {
+      console.log("🟡 Première utilisation – appel à /api/chat avec messages: []");
+
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: [] })
+      });
+
+      console.log("🔁 Réponse brute de l'API :", response);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ Erreur dans la réponse OpenAI :", errorText);
+        afficher("LifeBook", "❌ L’IA n’a pas répondu correctement. Réessayez.", "bot");
+        return;
+      }
+
+      const data = await response.json();
+      console.log("✅ Réponse JSON de l'API :", data);
+
+      if (!data.reply || typeof data.reply !== "string") {
+        afficher("LifeBook", "❌ L’IA n’a pas répondu correctement. Réessayez.", "bot");
+        return;
+      }
+
+      afficher("LifeBook", data.reply, "bot");
+      historique.push({ role: "assistant", content: data.reply });
+
+      // Lancer voix
+      fetch("/api/voice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: data.reply })
+      })
+        .then(res => res.blob())
+        .then(blob => {
+          const audio = new Audio(URL.createObjectURL(blob));
+          audio.play();
+        });
     }
+  } catch (err) {
+    console.error("❌ Erreur globale dans initChat :", err);
+    afficher("LifeBook", "⚠️ Une erreur s’est produite au lancement du chat. Vérifiez votre connexion ou réessayez plus tard.", "bot");
+  }
 
     document.getElementById("sendBtn").addEventListener("click", sendMessage);
     document.getElementById("skipBtn").addEventListener("click", passerQuestion);
