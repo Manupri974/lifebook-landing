@@ -240,24 +240,22 @@
 let isGenerating = false; // Pour éviter les clics multiples
 
 async function genererLivre() {
-  if (isGenerating) return;
-
   if (!historique || historique.length < 4) {
     alert("⛔️ Pas assez de contenu pour générer un livre. Complétez plus de réponses.");
     return;
   }
 
-  isGenerating = true;
-  const generateBtn = document.getElementById("generateBtn");
-  generateBtn.disabled = true;
-  generateBtn.innerHTML = "⏳ Génération...";
+  // Désactiver le bouton pour éviter les doubles clics
+  const btn = document.getElementById("generateBtn");
+  btn.disabled = true;
+  btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Génération...`;
 
   const contenu = historique
     .filter(m => m.role === 'user' || m.role === 'assistant')
     .map(m => m.role === 'assistant' ? `Q : ${m.content}` : `R : ${m.content}`)
     .join('\n');
 
-  const prompt = `Voici une interview contenant des questions (Q) et des réponses (R).\nRédige une biographie littéraire, chaleureuse et chronologique à partir de ces éléments.\nSi certaines réponses sont incomplètes, utilise ton imagination pour combler, tout en restant crédible et cohérent.\nÉvite de répéter les questions. Raconte l’histoire comme un vrai petit roman.\n\n${contenu}`;
+  const prompt = `Voici l'interview d'une personne. Chaque bloc commence par une question (Q) suivie d'une réponse (R).\nUtilise-les pour rédiger un texte littéraire et émouvant, structuré chronologiquement, racontant la vie de la personne.\n\n${contenu}`;
 
   try {
     const response = await fetch("/api/chat", {
@@ -267,41 +265,61 @@ async function genererLivre() {
         messages: [
           {
             role: "system",
-            content: "Tu es un écrivain biographe. Tu rédiges un récit fluide, littéraire et humain à partir d’une interview Q/R. Tu peux broder ou compléter les réponses si elles sont trop courtes, mais sans déformer la cohérence générale. Ton style est chaleureux, accessible et inspirant."
+            content:
+              "Tu es un biographe professionnel. Rédige un récit fluide, littéraire, chronologique et humain à partir des Q/R suivantes. Ne copie pas les questions, raconte l'histoire en continu comme dans un livre."
           },
           { role: "user", content: prompt }
         ]
       })
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Erreur API OpenAI :", errorText);
-      alert("❌ Erreur API OpenAI : " + errorText);
-      return;
-    }
-
     const data = await response.json();
 
     if (!data.reply || data.reply.trim().length === 0) {
-      alert("Le texte généré est vide. Vérifie que l’interview contient suffisamment de contenu.");
+      alert("❌ Le texte généré est vide. Vérifie que l’interview contient suffisamment de contenu.");
       return;
     }
 
-    // Génération PDF
+    // Afficher la barre de progression
+    const progressContainer = document.getElementById("pdfProgress");
+    const progressText = document.getElementById("pdfProgressPercent");
+    const progressBar = document.getElementById("pdfProgressBar");
+
+    progressContainer.style.display = "block";
+
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     const lines = doc.splitTextToSize(data.reply, 180);
-    doc.text(lines, 15, 20);
+
+    let y = 20;
+    for (let i = 0; i < lines.length; i++) {
+      doc.text(lines[i], 15, y);
+      y += 7;
+
+      const percent = Math.round(((i + 1) / lines.length) * 100);
+      progressText.textContent = percent + "%";
+      progressBar.style.width = percent + "%";
+
+      if (y > 280) {
+        doc.addPage();
+        y = 20;
+      }
+
+      // Animation fluide
+      await new Promise(resolve => setTimeout(resolve, 5));
+    }
+
     doc.save("LifeBook.pdf");
 
+    // Réinitialisation interface
+    progressContainer.style.display = "none";
+    btn.disabled = false;
+    btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
   } catch (error) {
-    console.error("Erreur JS :", error);
-    alert("❌ Erreur inattendue : " + error.message);
-  } finally {
-    isGenerating = false;
-    generateBtn.disabled = false;
-    generateBtn.innerHTML = "<i class='fas fa-book'></i> Générer";
+    console.error("Erreur API OpenAI :", error);
+    alert("❌ Erreur lors de la génération. Veuillez réessayer.");
+    btn.disabled = false;
+    btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
   }
 }
 
@@ -448,5 +466,13 @@ miseAJourProgression();
 
     window.onload = initChat;
   </script>
+  <div id="pdfProgress" style="margin: 30px auto; max-width: 500px; display: none;">
+  <div style="margin-bottom: 8px; text-align: center; font-weight: bold; color: #5a2a82;">
+    📄 Génération du PDF... <span id="pdfProgressPercent">0%</span>
+  </div>
+  <div style="width: 100%; height: 20px; background: #eee; border-radius: 12px; overflow: hidden;">
+    <div id="pdfProgressBar" style="height: 100%; width: 0%; background: linear-gradient(to right, #a347ba, #912ca3); transition: width 0.2s ease;"></div>
+  </div>
+</div>
 </body>
 </html>
