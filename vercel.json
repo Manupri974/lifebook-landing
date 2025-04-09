@@ -6,7 +6,7 @@
   ],
   "functions": {
     "api/chat.js": {
-      "maxDuration": 500
+      "maxDuration": 300
     }
   }
 }
