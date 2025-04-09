@@ -255,7 +255,6 @@ async function genererLivre() {
     return;
   }
 
-  // Désactiver le bouton pour éviter les doubles clics
   const btn = document.getElementById("generateBtn");
   btn.disabled = true;
   btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Génération...`;
@@ -287,15 +286,10 @@ async function genererLivre() {
 
     if (!data.reply || data.reply.trim().length === 0) {
       alert("❌ Le texte généré est vide. Vérifie que l’interview contient suffisamment de contenu.");
+      btn.disabled = false;
+      btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
       return;
     }
-
-    // Afficher la barre de progression
-    const progressContainer = document.getElementById("pdfProgress");
-    const progressText = document.getElementById("pdfProgressPercent");
-    const progressBar = document.getElementById("pdfProgressBar");
-
-    progressContainer.style.display = "block";
 
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
@@ -306,28 +300,17 @@ async function genererLivre() {
       doc.text(lines[i], 15, y);
       y += 7;
 
-      const percent = Math.round(((i + 1) / lines.length) * 100);
-      progressText.textContent = percent + "%";
-      progressBar.style.width = percent + "%";
-
       if (y > 280) {
         doc.addPage();
         y = 20;
       }
-
-      // Animation fluide
-      await new Promise(resolve => setTimeout(resolve, 5));
     }
 
     doc.save("LifeBook.pdf");
-
-    // Réinitialisation interface
-    progressContainer.style.display = "none";
-    btn.disabled = false;
-    btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
   } catch (error) {
     console.error("Erreur API OpenAI :", error);
     alert("❌ Erreur lors de la génération. Veuillez réessayer.");
+  } finally {
     btn.disabled = false;
     btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
   }
