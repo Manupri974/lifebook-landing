@@ -224,7 +224,7 @@ if (!response.ok) {
 
 const data = await response.json();
 
-      const botText = data.reply;
+      const botText = data.texte;
 
       afficher("LifeBook", botText, "bot");
       historique.push({ role: "assistant", content: botText });
