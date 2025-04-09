@@ -17,8 +17,8 @@ export default async function handler(req, res) {
 
   // Étape 2 : Découpage par blocs de 4 réponses
   const groupes = [];
-  for (let i = 0; i < reponses.length; i += 4) {
-    groupes.push(reponses.slice(i, i + 4).join("\n\n"));
+  for (let i = 0; i < reponses.length; i += 3) {
+    groupes.push(reponses.slice(i, i + 3).join("\n\n"));
   }
 
   // Étape 3 : Prompts
