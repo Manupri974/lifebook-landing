@@ -266,30 +266,30 @@ async function genererLivre() {
   btn.disabled = true;
   btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Génération...`;
 
-  console.log("🚀 Envoi de l’historique complet au backend...");
-
   try {
+    console.log("🚀 Envoi de l’historique complet au backend...");
+    
     const response = await fetch("/api/generer-livre", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ historique }),
+      body: JSON.stringify({ historique })
     });
 
-    const raw = await response.text();
+    const rawText = await response.text();
+    console.log("📦 Réponse brute reçue :", rawText);
 
-    if (!response.ok) {
-      console.error("❌ Réponse brute reçue :", raw);
-      alert("❌ Une erreur est survenue lors de la génération du livre.");
+    let data;
+    try {
+      data = JSON.parse(rawText);
+    } catch (err) {
+      console.error("❌ Erreur JSON :", err);
+      alert("⚠️ Erreur lors du traitement de la réponse. Détail dans la console.");
       btn.disabled = false;
       btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
       return;
     }
 
-    const data = JSON.parse(raw);
     const texteFinal = data.texte;
-
-    console.log("📘 Texte final généré :", texteFinal);
-
     if (!texteFinal || texteFinal.length < 100) {
       alert("❌ Le texte généré est trop court. Vérifie les réponses.");
       btn.disabled = false;
@@ -297,11 +297,11 @@ async function genererLivre() {
       return;
     }
 
-    // PDF
+    console.log("📘 Texte final généré :", texteFinal);
+
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     const lines = doc.splitTextToSize(texteFinal, 180);
-
     let y = 20;
     for (const line of lines) {
       doc.text(line, 15, y);
@@ -313,13 +313,14 @@ async function genererLivre() {
     }
 
     doc.save("LifeBook.pdf");
-  } catch (err) {
-    console.error("❌ Erreur JS :", err);
-    alert("❌ Une erreur est survenue lors de la génération.");
-  }
 
-  btn.disabled = false;
-  btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
+  } catch (error) {
+    console.error("❌ Erreur lors de la génération du livre :", error);
+    alert("Erreur lors de la génération. Détail dans la console.");
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
+  }
 }
 
     async function sauvegarder() {
