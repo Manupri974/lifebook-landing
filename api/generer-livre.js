@@ -26,10 +26,10 @@ app.post("/api/generer-livre", async (req, res) => {
   const reponses = historique.filter(msg => msg.role === 'user').map(msg => msg.content.trim());
   console.log("🧩 Nombre total de réponses utilisateur :", reponses.length);
 
-  // Étape 2 : Découpage par blocs de 1 réponses
+  // Étape 2 : Découpage par blocs de 3 réponses
   const groupes = [];
-  for (let i = 0; i < reponses.length; i += 1) {
-    groupes.push(reponses.slice(i, i + 1).join("\n\n"));
+  for (let i = 0; i < reponses.length; i += 3) {
+    groupes.push(reponses.slice(i, i + 3).join("\n\n"));
   }
 
   console.log("✂️ Séquences à traiter :", groupes.length);
