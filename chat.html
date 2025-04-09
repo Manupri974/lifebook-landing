@@ -247,7 +247,7 @@ const data = await response.json();
       sendMessage();
     }
 
-let isGenerating = false; // Pour éviter les clics multiples
+let isGenerating = false;
 
 async function genererLivre() {
   if (!historique || historique.length < 4) {
@@ -259,39 +259,45 @@ async function genererLivre() {
   btn.disabled = true;
   btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Génération...`;
 
-  // 🧠 Étape 1 : regrouper les paires question/réponse
-  const qas = [];
-  let currentQ = null;
+  // 🧠 Étape 1 : récupérer uniquement les réponses de l'utilisateur
+  const reponses = historique
+    .filter(m => m.role === 'user')
+    .map((m, i) => `${i + 1}. ${m.content.trim()}`)
+    .join('\n\n');
 
-  for (const m of historique) {
-    if (m.role === "assistant") {
-      currentQ = m.content;
-    } else if (m.role === "user" && currentQ) {
-      qas.push({
-        question: currentQ.trim(),
-        answer: m.content.trim()
-      });
-      currentQ = null;
-    }
-  }
+  // 🧠 Étape 2 : construire le prompt clair et cadré
+  const prompt = `
+Voici une série de réponses données par une personne interrogée dans le cadre d’un projet de biographie personnelle.
 
-  // 🧠 Étape 2 : construire le prompt structuré
-  const promptQA = qas.map((qa, index) => {
-    return `${index + 1}. Q : ${qa.question}\n   R : ${qa.answer}`;
-  }).join("\n\n");
+À partir de ces réponses uniquement, rédige un **récit biographique littéraire, fluide, structuré et humain**.
 
-  const intro = `Tu es un écrivain biographe. À partir des questions et réponses suivantes, rédige un récit fluide, littéraire, humain et structuré comme un livre. N'invente rien. Intègre le sens des questions naturellement dans le récit sans les reformuler mot à mot.`;
+Tu dois :
+- Reconstituer les grandes étapes de la vie (enfance, adolescence, famille, passions…)
+- Intégrer les éléments concrets et émotionnels dans la narration
+- Éviter les répétitions
+- Ne pas inventer de faits
+- Ne pas reformuler comme un robot
+- Ne pas énumérer les réponses
 
-  const messages = [
-    { role: "system", content: intro },
-    { role: "user", content: promptQA }
-  ];
+Voici les réponses à transformer en texte :
+
+${reponses}
+`;
 
   try {
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages })
+      body: JSON.stringify({
+        messages: [
+          {
+            role: "system",
+            content:
+              "Tu es un écrivain spécialisé en récits de vie. Ton style est chaleureux, humain et fluide. Tu vas recevoir une série de réponses et tu devras rédiger un texte biographique à partir de celles-ci."
+          },
+          { role: "user", content: prompt }
+        ]
+      })
     });
 
     const data = await response.json();
@@ -303,7 +309,7 @@ async function genererLivre() {
       return;
     }
 
-    // 📘 Génération PDF
+    // 📘 Génération du PDF
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     const lines = doc.splitTextToSize(data.reply, 180);
@@ -328,6 +334,7 @@ async function genererLivre() {
     btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
   }
 }
+
     async function sauvegarder() {
       status.textContent = "⏳ Sauvegarde en cours...";
       status.style.color = "black";
