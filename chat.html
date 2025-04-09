@@ -254,7 +254,7 @@ async function genererLivre() {
     alert("⛔️ Pas assez de contenu pour générer un livre. Complétez plus de réponses.");
     return;
   }
-
+console.log("📚 Historique de la conversation :", historique);
   const btn = document.getElementById("generateBtn");
   btn.disabled = true;
   btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Génération...`;
