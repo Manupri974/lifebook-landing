@@ -1,21 +1,18 @@
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end("Méthode non autorisée");
 
-  const { question, reponse } = req.body;
+  const { reponse } = req.body;
   const apiKey = process.env.OPENAI_API_KEY;
 
   if (!reponse) return res.status(400).json({ error: "Paramètre 'reponse' manquant" });
   if (!apiKey) return res.status(500).json({ error: "Clé API manquante" });
 
   const prompt = `
-Tu es un biographe professionnel.
+Transforme le texte suivant en un paragraphe narratif fluide, littéraire et humain.
 
-Voici une réponse d’interview donnée par une personne. Ta mission est de transformer cette réponse en un paragraphe narratif, fluide, littéraire et chaleureux — sans ajouter d'éléments fictifs.
+Ne reformule pas le sujet. N’invente rien. N’ajoute aucun contexte. N’évoque pas la question. Utilise uniquement ce contenu.
 
-Tu ne dois pas reformuler la question, ni la mentionner. Tu dois uniquement écrire une version enrichie et romancée de la réponse, comme dans un livre.
-
-Voici la réponse brute :
-
+Texte :
 ${reponse}
 `;
 
@@ -29,10 +26,10 @@ ${reponse}
       body: JSON.stringify({
         model: "gpt-4o",
         messages: [
-          { role: "system", content: "Tu es un biographe littéraire expert en récits de vie." },
+          { role: "system", content: "Tu es un biographe littéraire. Tu écris avec sensibilité, sans jamais inventer ni extrapoler." },
           { role: "user", content: prompt }
         ],
-        temperature: 1.1,
+        temperature: 1.0,
       })
     });
 
