@@ -16,9 +16,9 @@ export default async function handler(req, res) {
 Tu écris un **chapitre de livre biographique** à partir d'une **interview complète**.
 Tu dois :
 - Écrire **à la troisième personne**, comme un narrateur extérieur (jamais "vous").
-- Suivre un **style littéraire fluide et vivant**, mais pas pompeux.
+- Suivre un **style littéraire fluide et vivant**
 - Inclure **des détails concrets, anecdotes, émotions**.
-- Ne pas reformuler les questions, ni inventer d’éléments non évoqués.
+- Tu peux reformuler les réponses, **les approfondir**, **crééer une histoire plus ettofée auour des éléments reçus**
 - **Raconter une histoire vraie**, humaine, sincère.`;
 
   const reponsesUtiles = historique
