@@ -25,7 +25,7 @@ Tu es chargé de rédiger un **récit de vie biographique** à partir de répons
 - Évite le tutoiement ou vouvoiement. Ne t’adresse pas à la personne directement.
 
 📚 Structure :
-- Organise le récit en **chapitres clairs**, avec des titres pertinents.
+- Organise le récit en **chapitres clairs, d'une page minmum**, avec des titres pertinents.
 - Développe chaque souvenir ou anecdote.
 - Si une réponse est courte, utilise-la comme point de départ pour un développement émotionnel ou descriptif.
 
@@ -45,7 +45,7 @@ ${historique
       },
       body: JSON.stringify({
         model: "gpt-4o",
-        temperature: 1.1,
+        temperature: 1.3,
         messages: [
           { role: "system", content: promptSysteme },
           { role: "user", content: promptUser }
