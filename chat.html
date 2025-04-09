@@ -259,48 +259,25 @@ async function genererLivre() {
   btn.disabled = true;
   btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Génération...`;
 
-  console.log("🚀 Début de l'enrichissement des réponses...");
+  console.log("📥 Début récupération des réponses utilisateur...");
 
-  const enrichies = [];
+  const reponsesUniques = historique
+    .filter(m => m.role === 'user')
+    .map((m, i) => `${i + 1}. ${m.content.trim()}`);
 
-  for (let i = 0; i < historique.length; i++) {
-    const q = historique[i];
-    const r = historique[i + 1];
+  const prompt = `
+Voici une série de réponses fournies par une personne dans le cadre d’une interview biographique.
 
-    if (q?.role === 'assistant' && r?.role === 'user') {
-      try {
-        console.log("🔍 Enrichissement de la réponse :", r.content);
+Ta mission :
+- Rédiger une biographie fluide, littéraire, humaine et **chronologique**.
+- Tu dois **raconter sa vie comme une histoire**, avec un style narratif sobre et chaleureux.
+- N’invente rien. Ne reformule pas les questions. Ne copie pas les numéros. Utilise **uniquement** les éléments ci-dessous.
 
-        const res = await fetch('/api/valider-enrichir', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ reponse: r.content }) // 👈 On n’envoie plus la question !
-        });
-
-        const data = await res.json();
-        if (data?.resultat) {
-          enrichies.push(data.resultat);
-          console.log("✅ Réponse enrichie ajoutée");
-        } else {
-          console.warn("⚠️ Réponse non enrichie :", r.content);
-        }
-      } catch (err) {
-        console.error("❌ Erreur pendant l'enrichissement :", err);
-      }
-      i++; // on saute la réponse déjà traitée
-    }
-  }
-
-  console.log("📦 Enrichissements terminés. Nombre de blocs :", enrichies.length);
-
-  const prompt = `Voici une série de passages enrichis issus d'une interview. Tu dois rédiger une biographie fluide, littéraire, chronologique et humaine.
-
-N’invente rien. Ne reformule pas les questions. Utilise uniquement le contenu suivant pour écrire un récit aussi vivant que possible :
-
-${enrichies.join('\n\n')}
+Réponses :
+${reponsesUniques.join('\n\n')}
 `;
 
-  console.log("📤 PROMPT envoyé à l'API GPT:", prompt);
+  console.log("📤 Prompt envoyé à l’API :", prompt);
 
   try {
     const response = await fetch("/api/chat", {
@@ -311,7 +288,7 @@ ${enrichies.join('\n\n')}
           {
             role: "system",
             content:
-              "Tu es un biographe professionnel. Rédige un récit fluide, littéraire, chronologique et humain à partir des réponses suivantes. Ne copie pas les questions, raconte l'histoire comme dans un vrai livre."
+              "Tu es un biographe professionnel. Rédige un récit fluide, littéraire, chronologique et humain à partir des réponses suivantes. Ne copie pas les questions, raconte la vie de la personne comme dans un vrai livre."
           },
           { role: "user", content: prompt }
         ]
@@ -352,6 +329,7 @@ ${enrichies.join('\n\n')}
     btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
   }
 }
+
 
     async function sauvegarder() {
       status.textContent = "⏳ Sauvegarde en cours...";
