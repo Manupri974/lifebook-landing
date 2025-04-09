@@ -1,5 +1,3 @@
-// 📁 Fichier : /pages/api/valider-enrichir.js
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end("Méthode non autorisée");
 
@@ -38,11 +36,21 @@ R : ${reponse}
     });
 
     const data = await openaiRes.json();
-    const output = data.choices?.[0]?.message?.content || "";
+    const fullText = data.choices?.[0]?.message?.content || "";
 
-    res.status(200).json({ resultat: output });
+    // 🔍 On essaie d’extraire uniquement la partie 3 (la réponse enrichie)
+    const match = fullText.match(/3\.\s*(.+)$/s);
+
+    if (!match) {
+      console.warn("⚠️ Réponse GPT non exploitable, contenu brut :", fullText);
+      return res.status(200).json({ resultat: null });
+    }
+
+    const enriched = match[1].trim();
+
+    return res.status(200).json({ resultat: enriched });
   } catch (err) {
-    console.error("Erreur enrichissement:", err);
-    res.status(500).json({ error: "Erreur lors de l'appel à OpenAI" });
+    console.error("❌ Erreur enrichissement:", err);
+    return res.status(500).json({ error: "Erreur lors de l'appel à OpenAI" });
   }
 }
