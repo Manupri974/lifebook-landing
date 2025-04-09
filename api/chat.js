@@ -54,10 +54,10 @@ export default async function handler(req, res) {
 
   try {
     // 🧠 Détection : génération de livre ou interview interactive
-    const isGeneration =
-      messages?.[0]?.role === 'system' &&
-      messages[0].content.includes('rédiger un récit fluide');
-
+ const isGeneration = messages?.some(msg =>
+  msg.role === 'user' &&
+  msg.content?.toLowerCase().includes("réponses fournies par une personne dans le cadre d’une interview biographique")
+);
     const finalMessages = isGeneration
       ? messages
       : [systemPrompt, ...messages];
