@@ -269,7 +269,7 @@ async function genererLivre() {
   try {
     console.log("🚀 Envoi de l’historique complet au backend...");
 
-    const response = await fetch("/api/generer-livre", {
+const response = await fetch("https://lifebook-landing.onrender.com/api/generer-livre", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ historique })
