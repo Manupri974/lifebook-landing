@@ -257,25 +257,41 @@ async function genererLivre() {
   btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Génération...`;
 
   try {
+    console.log("🚀 Envoi de l’historique complet au backend...");
+    
     const response = await fetch("/api/generer-livre", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ historique })
     });
 
-    const data = await response.json();
+    const rawText = await response.text();
+    console.log("📦 Réponse brute reçue :", rawText);
 
-    if (!data || !data.texte || data.texte.length < 100) {
-      throw new Error("Texte généré insuffisant.");
+    let data;
+    try {
+      data = JSON.parse(rawText);
+    } catch (err) {
+      console.error("❌ Erreur JSON :", err);
+      alert("⚠️ Erreur lors du traitement de la réponse. Détail dans la console.");
+      btn.disabled = false;
+      btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
+      return;
     }
 
     const texteFinal = data.texte;
+    if (!texteFinal || texteFinal.length < 100) {
+      alert("❌ Le texte généré est trop court. Vérifie les réponses.");
+      btn.disabled = false;
+      btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
+      return;
+    }
 
-    // 🖨️ Génération du PDF avec jsPDF
+    console.log("📘 Texte final généré :", texteFinal);
+
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     const lines = doc.splitTextToSize(texteFinal, 180);
-
     let y = 20;
     for (const line of lines) {
       doc.text(line, 15, y);
@@ -287,13 +303,14 @@ async function genererLivre() {
     }
 
     doc.save("LifeBook.pdf");
-  } catch (err) {
-    console.error("❌ Erreur lors de la génération du livre :", err);
-    alert("❌ Une erreur est survenue lors de la génération du livre.");
-  }
 
-  btn.disabled = false;
-  btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
+  } catch (error) {
+    console.error("❌ Erreur lors de la génération du livre :", error);
+    alert("Erreur lors de la génération. Détail dans la console.");
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
+  }
 }
 
     async function sauvegarder() {
