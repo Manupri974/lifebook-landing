@@ -1,14 +1,19 @@
-import { config } from "dotenv";
+import express from "express";
 import fetch from "node-fetch";
+import { config } from "dotenv";
 
 config();
 
-export default async function handler(req, res) {
+const app = express();
+app.use(express.json());
+
+const apiKey = process.env.OPENAI_API_KEY;
+
+app.post("/api/generer-livre", async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Méthode non autorisée' });
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
   const { historique } = req.body;
 
   if (!apiKey || !historique || !Array.isArray(historique)) {
@@ -19,12 +24,15 @@ export default async function handler(req, res) {
 
   // Étape 1 : Extraire uniquement les réponses utilisateur
   const reponses = historique.filter(msg => msg.role === 'user').map(msg => msg.content.trim());
+  console.log("🧩 Nombre total de réponses utilisateur :", reponses.length);
 
-  // Étape 2 : Découpage par blocs de 3 réponses
+  // Étape 2 : Découpage par blocs de 1 réponses
   const groupes = [];
-  for (let i = 0; i < reponses.length; i += 3) {
-    groupes.push(reponses.slice(i, i + 3).join("\n\n"));
+  for (let i = 0; i < reponses.length; i += 1) {
+    groupes.push(reponses.slice(i, i + 1).join("\n\n"));
   }
+
+  console.log("✂️ Séquences à traiter :", groupes.length);
 
   // Étape 3 : Prompts
   const promptSysteme = "Tu es un biographe professionnel, littéraire et humain.";
@@ -40,9 +48,10 @@ Contenu :
 
   const morceaux = [];
 
-  for (const bloc of groupes) {
+  for (let i = 0; i < groupes.length; i++) {
+    const bloc = groupes[i];
     try {
-      console.log("📤 Envoi d’un bloc de 3 réponses...");
+      console.log(`📤 Envoi séquence ${i + 1} / ${groupes.length}...`);
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -78,6 +87,11 @@ Contenu :
     return res.status(500).json({ message: "Le texte généré est trop court ou vide." });
   }
 
-  console.log("📘 Texte final généré avec succès. Longueur :", texteFinal.length);
+  console.log("📘 Texte final généré avec succès.");
   res.status(200).json({ texte: texteFinal });
-}
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`✅ Serveur lancé sur le port ${PORT}`);
+});
