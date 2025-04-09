@@ -30,7 +30,7 @@ Ta mission :
 - Structure le récit de manière **chronologique**.
 - **N’oublie aucun élément** mentionné dans les réponses.
 - **Brode** autour des anecdotes et souvenirs pour créer un texte **riche, nuancé et cohérent**, comme un chapitre de roman.
-- Fais preuve de liberté dans ton interprétation pour générer un récit captivant d'au moins 10 pages
+- Fais preuve de liberté dans ton interprétation pour générer un récit captivant d'au moins 5 pages
 
 Voici les réponses de l’interview :
 
