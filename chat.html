@@ -262,8 +262,6 @@ async function genererLivre() {
   console.log("🚀 Début de l'enrichissement des réponses...");
 
   const enrichies = [];
-  let ignorees = 0;
-  let compteur = 1;
 
   for (let i = 0; i < historique.length; i++) {
     const q = historique[i];
@@ -271,42 +269,36 @@ async function genererLivre() {
 
     if (q?.role === 'assistant' && r?.role === 'user') {
       try {
-        console.log(`🔍 (${compteur}) Enrichissement de :`, q.content);
+        console.log("🔍 Enrichissement de la réponse :", r.content);
 
         const res = await fetch('/api/valider-enrichir', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ question: q.content, reponse: r.content })
+          body: JSON.stringify({ reponse: r.content }) // 👈 On n’envoie plus la question !
         });
 
         const data = await res.json();
-        if (data?.resultat && data.resultat.trim().length > 30) {
-          enrichies.push(data.resultat.trim());
+        if (data?.resultat) {
+          enrichies.push(data.resultat);
           console.log("✅ Réponse enrichie ajoutée");
         } else {
-          ignorees++;
-          console.warn("⚠️ Réponse ignorée (trop courte ou vide)");
+          console.warn("⚠️ Réponse non enrichie :", r.content);
         }
       } catch (err) {
-        ignorees++;
         console.error("❌ Erreur pendant l'enrichissement :", err);
       }
-
-      i++; // skip la réponse déjà traitée
-      compteur++;
+      i++; // on saute la réponse déjà traitée
     }
   }
 
-  console.log(`📦 Enrichissements terminés : ${enrichies.length} réponses valides, ${ignorees} ignorées.`);
+  console.log("📦 Enrichissements terminés. Nombre de blocs :", enrichies.length);
 
-  if (enrichies.length < 3) {
-    alert("❌ Trop peu de réponses exploitables. Complétez davantage l'interview.");
-    btn.disabled = false;
-    btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
-    return;
-  }
+  const prompt = `Voici une série de passages enrichis issus d'une interview. Tu dois rédiger une biographie fluide, littéraire, chronologique et humaine.
 
-  const prompt = `Voici le récit enrichi d'une personne, construit à partir de ses réponses à une série d'interviews. Tu dois rédiger une biographie fluide, littéraire, chronologique et humaine. Ne reformule pas les questions et n'invente rien. Utilise uniquement le contenu suivant :\n\n${enrichies.join('\n\n')}`;
+N’invente rien. Ne reformule pas les questions. Utilise uniquement le contenu suivant pour écrire un récit aussi vivant que possible :
+
+${enrichies.join('\n\n')}
+`;
 
   console.log("📤 PROMPT envoyé à l'API GPT:", prompt);
 
@@ -360,7 +352,6 @@ async function genererLivre() {
     btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
   }
 }
-
 
     async function sauvegarder() {
       status.textContent = "⏳ Sauvegarde en cours...";
