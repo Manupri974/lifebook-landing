@@ -1,19 +1,11 @@
-import express from "express";
 import fetch from "node-fetch";
-import { config } from "dotenv";
 
-config();
-
-const app = express();
-app.use(express.json());
-
-const apiKey = process.env.OPENAI_API_KEY;
-
-app.post("/api/generer-livre", async (req, res) => {
+export async function genererLivreHandler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Méthode non autorisée' });
   }
 
+  const apiKey = process.env.OPENAI_API_KEY;
   const { historique } = req.body;
 
   if (!apiKey || !historique || !Array.isArray(historique)) {
@@ -89,9 +81,4 @@ Contenu :
 
   console.log("📘 Texte final généré avec succès.");
   res.status(200).json({ texte: texteFinal });
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`✅ Serveur lancé sur le port ${PORT}`);
-});
+}
