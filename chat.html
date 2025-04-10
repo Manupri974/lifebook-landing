@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Interview LifeBook</title>
 
-  <!-- Liens externes -->
+  <!-- Librairies externes -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
-  <!-- CSS global -->
+  <!-- Styles globaux -->
   <style>
     body {
       font-family: 'Poppins', sans-serif;
@@ -173,28 +173,37 @@
       font-size: 0.9em;
     }
 
-    /* Markdown styles pour les réponses de l'IA */
+    /* Markdown beautification */
     .message.bot h1,
-    .message.bot h2,
-    .message.bot h3 {
-      margin: 12px 0 6px;
-      font-weight: 600;
+    .message.bot h2 {
+      font-size: 1.2em;
+      font-weight: 700;
       color: #6b1e8a;
-      font-size: 1.1em;
+      margin: 18px 0 6px;
+      border-bottom: 2px solid #d9b3e4;
+      padding-bottom: 4px;
+    }
+
+    .message.bot h3 {
+      font-size: 1em;
+      font-weight: 600;
+      color: #8747a0;
+      margin: 10px 0 4px;
     }
 
     .message.bot p {
       margin: 6px 0;
-      line-height: 1.5em;
+      line-height: 1.6em;
     }
 
     .message.bot ul {
       padding-left: 20px;
-      margin: 6px 0;
+      margin: 6px 0 12px;
     }
 
     .message.bot li {
-      margin-bottom: 4px;
+      margin-bottom: 6px;
+      line-height: 1.5em;
     }
 
     .message.bot strong {
@@ -203,6 +212,7 @@
     }
   </style>
 </head>
+
 <body>
   <header>
     <a href="/index.html">LifeBook</a>
