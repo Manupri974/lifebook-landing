@@ -8,6 +8,29 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  .message.bot h1,
+.message.bot h2,
+.message.bot h3 {
+  margin: 12px 0 6px;
+  font-weight: 600;
+  color: #6b1e8a;
+  font-size: 1.1em;
+}
+.message.bot p {
+  margin: 6px 0;
+  line-height: 1.5em;
+}
+.message.bot ul {
+  padding-left: 20px;
+  margin: 6px 0;
+}
+.message.bot li {
+  margin-bottom: 4px;
+}
+.message.bot strong {
+  font-weight: bold;
+  color: #4b145c;
+}
   <style>
     body {
       font-family: 'Poppins', sans-serif;
@@ -187,14 +210,17 @@
 
     const status = document.getElementById("messageStatus");
 
-    function afficher(auteur, texte, classe) {
-      const msg = document.createElement("div");
-      msg.className = "message " + classe;
-      msg.innerHTML = `<strong>${auteur} :</strong> ${texte}`;
-      document.getElementById("messages").appendChild(msg);
-      document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
-    }
+function afficher(auteur, texte, classe) {
+  const msg = document.createElement("div");
+  msg.className = "message " + classe;
 
+  // Si c'est un message du bot, on parse le Markdown en HTML
+  const contenu = classe === "bot" ? marked.parse(texte) : texte;
+
+  msg.innerHTML = `<strong>${auteur} :</strong><br>${contenu}`;
+  document.getElementById("messages").appendChild(msg);
+  document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
+}
     function miseAJourProgression() {
       const count = historique.filter(m => m.role === "user").length;
       document.getElementById("progression").innerText = `Question ${count + 1} / 89`;
