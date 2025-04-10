@@ -218,7 +218,9 @@ async function genererPlan() {
     btn.disabled = false;
     btn.innerHTML = `<i class="fas fa-forward"></i> Générer plan`;
   }
+}
 async function sendMessage() {
+
   const input = document.getElementById("userInput");
   const text = input.value.trim();
   if (!text) return;
