@@ -387,7 +387,7 @@ async function genererLivre() {
   btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Génération...`;
 
   try {
-    console.log("🚀 Construction des segments logiques à partir de l’historique...");
+    console.log("🚀 Étape 1 : Construction des segments...");
 
     const segments = {};
     let current = "1";
@@ -403,8 +403,9 @@ async function genererLivre() {
       }
     }
 
-    console.log("🧠 Segments envoyés au backend :", segments);
+    console.log("✅ Segments construits :", segments);
 
+    console.log("📤 Étape 2 : Envoi au backend...");
     const response = await fetch("https://lifebook-landing.onrender.com/api/generer-livre", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -417,7 +418,7 @@ async function genererLivre() {
     }
 
     const rawText = await response.text();
-    console.log("📦 Réponse brute reçue :", rawText);
+    console.log("📦 Réponse brute reçue :", rawText.slice(0, 300)); // on affiche que le début
 
     let data;
     try {
@@ -433,26 +434,27 @@ async function genererLivre() {
       return;
     }
 
+    console.log("🖨️ Étape 3 : Construction du PDF...");
+
     const texteFinal = data.texte.trim();
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF("p", "mm", "A4");
 
-    // Marges inspirées d’un livre (plus grande à gauche pour reliure)
     const margeGauche = 25;
     const margeDroite = 20;
     const margeHaut = 25;
     const margeBas = 25;
     const largeurTexte = 210 - margeGauche - margeDroite;
+    const interligne = 6;
 
-    // Style global
     doc.setFont("Times", "");
     doc.setFontSize(12);
-    const interligne = 6;
 
     let y = margeHaut;
     let page = 1;
 
     const ajouterPagination = () => {
+      console.log(`📄 Ajout de la pagination - page ${page}`);
       doc.setFontSize(10);
       doc.setTextColor(150);
       doc.text(`Page ${page}`, 105, 297 - 10, { align: "center" });
@@ -465,25 +467,27 @@ async function genererLivre() {
 
     for (let ligne of lignes) {
       ligne = ligne.trim();
-      if (ligne === "") continue;
+      if (!ligne) continue;
 
-      // Titre de chapitre
+      // Chapitre
       if (/^Chapitre\s+\d+/.test(ligne)) {
         if (y + 20 > 297 - margeBas) {
           ajouterPagination();
           doc.addPage();
           y = margeHaut;
         }
+        console.log("✏️ Titre :", ligne);
         doc.setFontSize(16);
         doc.setFont("Times", "bold");
         doc.text(ligne, 105, y, { align: "center" });
         y += 12;
-        doc.setFont("Times", "");
         doc.setFontSize(12);
+        doc.setFont("Times", "");
         y += 8;
         continue;
       }
 
+      // Paragraphe
       const blocs = doc.splitTextToSize(ligne, largeurTexte);
       for (const bloc of blocs) {
         if (y + interligne > 297 - margeBas) {
@@ -495,12 +499,13 @@ async function genererLivre() {
         y += interligne;
       }
 
-      y += interligne; // espacement entre paragraphes
+      y += interligne;
     }
 
     ajouterPagination();
-    doc.save("LifeBook.pdf");
 
+    console.log("📥 Étape finale : Téléchargement...");
+    doc.save("LifeBook.pdf");
     alert("📘 Livre généré avec succès !");
   } catch (error) {
     console.error("❌ Erreur lors de la génération :", error);
