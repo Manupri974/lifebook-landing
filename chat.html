@@ -323,7 +323,7 @@ async function sendMessage() {
     }
 
     const data = await response.json();
-    let botText = data.reply;
+    const botText = data.reply;
 
     const sequences = {
       1: ["Quel est votre prénom", "Pourriez-vous m’en dire plus sur son origine", "Quand et où êtes-vous né"],
@@ -343,14 +343,16 @@ async function sendMessage() {
 
     if (sequenceId) {
       console.log(`🧩 Nouvelle séquence détectée : ${sequenceId}`);
-      // Ajoute uniquement dans l'historique
-      historique.push({ role: "assistant", content: `### Séquence : ${sequenceId}\n\n${botText}` });
+      // 👉 On ajoute uniquement dans l’historique, sans affichage
+      historique.push({ role: "assistant", content: `### Séquence : ${sequenceId}` });
     } else {
       console.log("➡️ Pas de nouvelle séquence détectée (probablement une relance)");
-      historique.push({ role: "assistant", content: botText });
     }
 
-    // ✅ Affichage propre à l'utilisateur (sans balise)
+    // Ajout du texte réel du bot
+    historique.push({ role: "assistant", content: botText });
+
+    // Affichage propre
     afficher("LifeBook", botText, "bot");
     miseAJourProgression();
 
@@ -371,6 +373,7 @@ async function sendMessage() {
     afficher("LifeBook", "⚠️ Une erreur s’est produite. Vérifiez votre connexion ou réessayez.", "bot");
   }
 }
+
 async function genererLivre() {
   if (!historique || historique.length < 4) {
     alert("⛔️ Pas assez de contenu pour générer un livre. Complétez plus de réponses.");
