@@ -18,9 +18,11 @@ export default async function genererLivre(req, res) {
 
   console.log("🚀 Envoi de l’historique complet au backend…");
 
+  // Étape 1 : Extraire uniquement les réponses utilisateur
   const reponses = historique.filter(msg => msg.role === 'user').map(msg => msg.content.trim());
   console.log("🧩 Nombre total de réponses utilisateur :", reponses.length);
 
+  // Étape 2 : Découpage par blocs de 3 réponses
   const groupes = [];
   for (let i = 0; i < reponses.length; i += 3) {
     groupes.push(reponses.slice(i, i + 3).join("\n\n"));
@@ -28,13 +30,14 @@ export default async function genererLivre(req, res) {
 
   console.log("✂️ Séquences à traiter :", groupes.length);
 
+  // Étape 3 : Prompts
   const promptSysteme = "Tu es un biographe professionnel, littéraire et humain.";
   const promptUserBase = `Voici une partie d’interview biographique.
 
 Ta mission :
-- Rédige un passage narratif fluide, structuré, chronologique et humain à partir du contenu fourni.
-- Structure le texte avec des **titres de chapitres** (niveau markdown : ## Chapitre X : Titre).
-- N’invente rien. Utilise uniquement les éléments fournis.
+- Rédige un passage narratif fluide, chronologique et chaleureux à partir du contenu fourni.
+- Utilise un style littéraire simple mais expressif, humain, sans artifices.
+- Ne reformule pas les questions. N’invente rien. Utilise uniquement les éléments ci-dessous.
 
 Contenu :
 `;
@@ -80,18 +83,6 @@ Contenu :
     return res.status(500).json({ message: "Le texte généré est trop court ou vide." });
   }
 
-  // EXTRACTION DU PLAN depuis les titres de chapitre (markdown)
-  const lignes = texteFinal.split("\n");
-  const plan = lignes
-    .filter(l => l.trim().startsWith("## "))
-    .map((l, idx) => `- ${l.replace("##", "").trim()}`)
-    .join("\n");
-
   console.log("📘 Texte final généré avec succès.");
-  console.log("📋 Plan extrait :", plan || "Aucun titre détecté");
-
-  res.status(200).json({
-    texte: texteFinal,
-    plan: plan || null,
-  });
+  res.status(200).json({ texte: texteFinal });
 }
