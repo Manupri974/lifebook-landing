@@ -1,5 +1,3 @@
-// api/chat.js – Backend sécurisé pour LifeBook
-
 const systemPrompt = {
   role: "system",
   content: `
@@ -60,13 +58,13 @@ export default async function handler(req, res) {
     return res.status(500).json({ message: "Clé API non trouvée dans les variables d'environnement" });
   }
 
-  // 🔍 Filtrage des anciens plans markdown s'ils sont présents
-  const messagesFiltres = messages.filter(m =>
-    !(m.role === "assistant" && m.content.includes("## Chapitre"))
-  );
-
   try {
-    const finalMessages = [systemPrompt, ...messagesFiltres];
+    // Détection automatique : si un plan existe, on sort du mode interview
+    const contientPlan = messages.some(
+      m => m.role === "assistant" && typeof m.content === "string" && m.content.includes("## Chapitre")
+    );
+
+    const finalMessages = contientPlan ? messages : [systemPrompt, ...messages];
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -76,7 +74,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: "gpt-4o",
-        temperature: 1.2,
+        temperature: 1.1,
         messages: finalMessages,
       }),
     });
