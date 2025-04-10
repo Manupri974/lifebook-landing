@@ -198,29 +198,13 @@
       const count = historique.filter(m => m.role === "user").length;
       document.getElementById("progression").innerText = `Question ${count + 1} / 89`;
     }
-async function genererPlan() {
-  const btn = document.getElementById("planBtn");
-  btn.disabled = true;
-  btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Génération...`;
-  try {
-    const response = await fetch("/api/plan", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ historique })
-    });
-    const data = await response.json();
-    if (!data || !data.texte) throw new Error("Réponse invalide");
-    afficher("Plan proposé", data.texte, "bot");
-  } catch (err) {
-    console.error("Erreur lors de la génération du plan:", err);
-    alert("Erreur lors de la génération du plan. Voir la console.");
   } finally {
     btn.disabled = false;
     btn.innerHTML = `<i class="fas fa-forward"></i> Générer plan`;
   }
-}
-async function sendMessage() {
+} // ✅ Fermeture de la fonction genererPlan correctement placée
 
+async function sendMessage() {
   const input = document.getElementById("userInput");
   const text = input.value.trim();
   if (!text) return;
