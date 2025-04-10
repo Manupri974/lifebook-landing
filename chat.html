@@ -323,16 +323,34 @@ async function sendMessage() {
     }
 
     const data = await response.json();
+    const botText = data.reply;
 
-    if (!data.reply || typeof data.reply !== "string") {
-      console.error("Réponse mal formée :", data);
-      afficher("LifeBook", "❌ L’IA n’a pas répondu correctement. Réessayez.", "bot");
-      return;
+    afficher("LifeBook", botText, "bot");
+
+    const sequences = {
+      1: ["Quel est votre prénom", "Pourriez-vous m’en dire plus sur son origine", "Quand et où êtes-vous né"],
+      2: ["Où avez-vous grandi", "Quel était votre jeu ou activité préféré", "Parlez-moi un peu de vos parents", "Et vos frères et sœurs"],
+      3: ["Quel type d’enfant étiez-vous", "Souvenirs marquants de votre jeune scolarité", "Vos amis d’enfance", "Un voyage marquant de votre enfance"],
+      4: ["Un événement historique qui vous a marqué", "Vos années collège", "Une anecdote forte de votre adolescence", "Comment étiez-vous ado", "Une histoire d’amour marquante à cette époque"],
+      5: ["Vos passions d'adolescent", "Que retenez-vous du lycée", "Quel lycéen étiez-vous", "Vos liens familiaux ont-ils changé"]
+    };
+
+    let sequenceId = null;
+    for (const [id, phrases] of Object.entries(sequences)) {
+      if (phrases.some(phrase => botText.toLowerCase().includes(phrase.toLowerCase()))) {
+        sequenceId = parseInt(id);
+        break;
+      }
     }
 
-    const botText = data.reply;
-    afficher("LifeBook", botText, "bot");
-    historique.push({ role: "assistant", content: botText });
+    if (sequenceId) {
+      console.log(`🧩 Nouvelle séquence détectée : ${sequenceId}`);
+    } else {
+      console.log("➡️ Pas de nouvelle séquence détectée (probablement une relance)");
+    }
+
+    historique.push({ role: "assistant", content: botText, sequence: sequenceId });
+
     miseAJourProgression();
 
     // Lecture vocale
