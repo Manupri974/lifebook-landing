@@ -394,7 +394,7 @@ async function genererLivre() {
 
     for (const msg of historique) {
       if (msg.role === "assistant" && msg.content.includes("### Séquence")) {
-        const match = msg.content.match(/### Séquence\s*:\s*(\d+)/i);
+        const match = msg.content.match(/###\s*Séquence\s*:?[\s]*(\d+)/i);
         if (match) current = match[1];
       }
       if (msg.role === "user") {
@@ -410,6 +410,11 @@ async function genererLivre() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ segments })
     });
+
+    if (!response.ok) {
+      alert(`❌ Erreur du serveur (${response.status})`);
+      return;
+    }
 
     const rawText = await response.text();
     console.log("📦 Réponse brute reçue :", rawText);
@@ -432,31 +437,37 @@ async function genererLivre() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF("p", "mm", "A4");
 
-    // Configuration des marges
+    // Marges inspirées d’un livre (plus grande à gauche pour reliure)
     const margeGauche = 25;
     const margeDroite = 20;
-    const margeHaut = 20;
+    const margeHaut = 25;
     const margeBas = 25;
     const largeurTexte = 210 - margeGauche - margeDroite;
 
-    doc.setFont("Times", ""); // ou "serif"
+    // Style global
+    doc.setFont("Times", "");
     doc.setFontSize(12);
+    const interligne = 6;
 
-    const lignes = texteFinal.split("\n");
     let y = margeHaut;
     let page = 1;
 
     const ajouterPagination = () => {
       doc.setFontSize(10);
-      doc.text(`${page}`, 105, 297 - 10, { align: "center" });
+      doc.setTextColor(150);
+      doc.text(`Page ${page}`, 105, 297 - 10, { align: "center" });
       doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
       page++;
     };
 
+    const lignes = texteFinal.split("\n");
+
     for (let ligne of lignes) {
       ligne = ligne.trim();
+      if (ligne === "") continue;
 
-      // Si c'est un titre de chapitre
+      // Titre de chapitre
       if (/^Chapitre\s+\d+/.test(ligne)) {
         if (y + 20 > 297 - margeBas) {
           ajouterPagination();
@@ -467,31 +478,30 @@ async function genererLivre() {
         doc.setFont("Times", "bold");
         doc.text(ligne, 105, y, { align: "center" });
         y += 12;
-        doc.setFontSize(12);
         doc.setFont("Times", "");
-        y += 6;
+        doc.setFontSize(12);
+        y += 8;
         continue;
       }
 
-      // Texte normal
       const blocs = doc.splitTextToSize(ligne, largeurTexte);
       for (const bloc of blocs) {
-        if (y + 7 > 297 - margeBas) {
+        if (y + interligne > 297 - margeBas) {
           ajouterPagination();
           doc.addPage();
           y = margeHaut;
         }
         doc.text(bloc, margeGauche, y);
-        y += 7;
+        y += interligne;
       }
 
-      y += 4; // espacement entre paragraphes
+      y += interligne; // espacement entre paragraphes
     }
 
-    ajouterPagination(); // dernière page
-
+    ajouterPagination();
     doc.save("LifeBook.pdf");
 
+    alert("📘 Livre généré avec succès !");
   } catch (error) {
     console.error("❌ Erreur lors de la génération :", error);
     alert("❌ Une erreur est survenue pendant la génération. Voir la console.");
@@ -500,7 +510,6 @@ async function genererLivre() {
     btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
   }
 }
-
     async function sauvegarder() {
       status.textContent = "⏳ Sauvegarde en cours...";
       status.style.color = "black";
