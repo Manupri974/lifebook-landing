@@ -203,7 +203,7 @@ async function genererPlan() {
   btn.disabled = true;
   btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Génération...`;
   try {
-    const response = await fetch("/api/plan", {
+ const response = await fetch("https://lifebook-landing.vercel.app/api/plan", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ historique })
