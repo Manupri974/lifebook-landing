@@ -262,15 +262,21 @@ async function genererPlan() {
   const btn = document.getElementById("planBtn");
   btn.disabled = true;
   btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Génération...`;
+
   try {
- const response = await fetch("https://lifebook-landing.vercel.app/api/plan", {
+    const response = await fetch("https://lifebook-landing.vercel.app/api/plan", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ historique })
     });
+
     const data = await response.json();
+
     if (!data || !data.texte) throw new Error("Réponse invalide");
-    afficher("Plan proposé", data.texte, "bot");
+
+    // ✅ Appliquer la mise en forme Markdown :
+    afficher("Plan proposé", marked.parse(data.texte), "bot");
+
   } catch (err) {
     console.error("Erreur lors de la génération du plan:", err);
     alert("Erreur lors de la génération du plan. Voir la console.");
