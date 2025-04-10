@@ -272,6 +272,7 @@ async function genererPlan() {
   const btn = document.getElementById("planBtn");
   btn.disabled = true;
   btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Génération...`;
+
   try {
     const response = await fetch("/api/plan", {
       method: "POST",
@@ -284,8 +285,12 @@ async function genererPlan() {
 
     if (!data || !data.texte) throw new Error("Réponse invalide");
 
-    const html = marked.parse(data.texte); // ✅ transformer le markdown en HTML
-    afficher("Plan proposé", html, "bot");
+    const markdown = data.texte.trim();
+    const html = marked.parse(markdown); // ✅ transformer en HTML pour affichage
+
+    afficher("Plan proposé", html, "bot");         // ✅ affichage visuel
+    historique.push({ role: "assistant", content: markdown }); // ✅ sauvegarde brut markdown
+
   } catch (err) {
     console.error("Erreur lors de la génération du plan:", err);
     alert("Erreur lors de la génération du plan. Voir la console.");
@@ -522,9 +527,15 @@ const response = await fetch("https://lifebook-landing.onrender.com/api/generer-
           }
 
           historique = data.content;
-          historique.forEach(msg => {
-            afficher(msg.role === "user" ? "Vous" : "LifeBook", msg.content, msg.role);
-          });
+         historique.forEach(msg => {
+  if (msg.role === "assistant" && msg.content.includes("## Chapitre")) {
+    // Si c'est un plan au format markdown
+    const html = marked.parse(msg.content);
+    afficher("Plan proposé", html, "bot");
+  } else {
+    afficher(msg.role === "user" ? "Vous" : "LifeBook", msg.content, msg.role);
+  }
+});
           miseAJourProgression();
         } else {
           console.log("🟡 Première utilisation – appel à /api/chat avec messages: []");
