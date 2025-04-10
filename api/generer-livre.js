@@ -9,39 +9,15 @@ export default async function genererLivre(req, res) {
     return res.status(405).json({ message: "Méthode non autorisée" });
   }
 
-  const { historique } = req.body;
+  const { segments } = req.body;
 
-  if (!apiKey || !historique || !Array.isArray(historique)) {
-    return res.status(400).json({ message: "Clé API ou historique manquant/invalide" });
+  if (!apiKey || !segments || typeof segments !== "object") {
+    return res.status(400).json({ message: "Clé API ou segments manquant/invalide" });
   }
 
-  console.log("🚀 Génération du livre par séquences logiques...");
+  console.log("🚀 Génération du livre à partir des segments logiques...");
+  console.log("📦 Segments reçus :", segments);
 
-  // Étape 1 : Grouper les messages utilisateur par séquence
-  const sequences = {};
-  let currentSequence = "1";
-
-  for (const msg of historique) {
-    if (msg.role === "assistant" && msg.content.includes("### Séquence")) {
-      const match = msg.content.match(/### Séquence\s*:\s*(\d+)/i);
-      if (match) {
-        currentSequence = match[1];
-        console.log(`🔀 Passage à la séquence ${currentSequence}`);
-        continue;
-      }
-    }
-
-    if (msg.role === "user") {
-      if (!sequences[currentSequence]) sequences[currentSequence] = [];
-      sequences[currentSequence].push(msg.content.trim());
-    }
-  }
-
-  const total = Object.keys(sequences).length;
-  console.log("🧩 Nombre de séquences détectées :", total);
-  console.log("🧾 Contenu des séquences :", sequences);
-
-  // Étape 2 : Générer un chapitre par séquence
   const promptSysteme = "Tu es un biographe littéraire, empathique, humain.";
   const promptChapitre = (bloc, num) => `Voici une séquence d’interview biographique :
 
@@ -56,10 +32,10 @@ Ta mission :
 
   const chapitres = [];
 
-  for (const numero in sequences) {
-    const bloc = sequences[numero].join("\n\n");
+  for (const numero in segments) {
+    const bloc = segments[numero].join("\n\n");
     console.log(`📤 Envoi de la séquence ${numero} à l’API...`);
-    console.log("📄 Contenu de la séquence :", bloc);
+    console.log("📄 Contenu :", bloc);
 
     try {
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
