@@ -67,11 +67,17 @@ export default async function handler(req, res) {
       m => m.role === "assistant" && m.content?.includes(derniereQuestion)
     );
 
+    const derniereReponse = messages.some(
+      m => m.role === "user" && messages[messages.indexOf(m) - 1]?.content?.includes(derniereQuestion)
+    );
+
     const demandePlan = messages.some(
       m => m.role === "user" && m.content?.toLowerCase().includes("générer un plan")
     );
 
-    const finalMessages = demandePlan || dernierePosée
+    const isFinDeTrame = dernierePosée && derniereReponse;
+
+    const finalMessages = demandePlan || isFinDeTrame
       ? messages
       : [systemPrompt, ...messages];
 
