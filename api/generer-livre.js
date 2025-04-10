@@ -26,6 +26,7 @@ export default async function genererLivre(req, res) {
       const match = msg.content.match(/### Séquence\s*:\s*(\d+)/i);
       if (match) {
         currentSequence = match[1];
+        console.log(`🔀 Passage à la séquence ${currentSequence}`);
         continue;
       }
     }
@@ -36,7 +37,9 @@ export default async function genererLivre(req, res) {
     }
   }
 
-  console.log("🧩 Séquences logiques détectées :", Object.keys(sequences).length);
+  const total = Object.keys(sequences).length;
+  console.log("🧩 Nombre de séquences détectées :", total);
+  console.log("🧾 Contenu des séquences :", sequences);
 
   // Étape 2 : Générer un chapitre par séquence
   const promptSysteme = "Tu es un biographe littéraire, empathique, humain.";
@@ -55,8 +58,10 @@ Ta mission :
 
   for (const numero in sequences) {
     const bloc = sequences[numero].join("\n\n");
+    console.log(`📤 Envoi de la séquence ${numero} à l’API...`);
+    console.log("📄 Contenu de la séquence :", bloc);
+
     try {
-      console.log(`📤 Traitement séquence ${numero}...`);
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -75,14 +80,15 @@ Ta mission :
 
       const data = await response.json();
       const texte = data?.choices?.[0]?.message?.content;
+
       if (texte) {
         chapitres.push(texte.trim());
-        console.log(`✅ Chapitre ${numero} généré`);
+        console.log(`✅ Chapitre généré pour la séquence ${numero}`);
       } else {
-        console.warn(`⚠️ Aucun texte généré pour la séquence ${numero}`);
+        console.warn(`⚠️ Aucune réponse pour la séquence ${numero}`, data);
       }
     } catch (err) {
-      console.error(`❌ Erreur sur la séquence ${numero} :`, err);
+      console.error(`❌ Erreur API pour la séquence ${numero} :`, err);
     }
   }
 
