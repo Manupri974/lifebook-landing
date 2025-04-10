@@ -60,8 +60,13 @@ export default async function handler(req, res) {
     return res.status(500).json({ message: "Clé API non trouvée dans les variables d'environnement" });
   }
 
+  // 🔍 Filtrage des anciens plans markdown s'ils sont présents
+  const messagesFiltres = messages.filter(m =>
+    !(m.role === "assistant" && m.content.includes("## Chapitre"))
+  );
+
   try {
-    const finalMessages = [systemPrompt, ...messages];
+    const finalMessages = [systemPrompt, ...messagesFiltres];
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
