@@ -236,7 +236,8 @@
   </div>
 
   <script type="module">
-    import { createClient } from 'https://esm.sh/@supabase/supabase-js';
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js';
+  import { planManager } from './planManager.js'; // ✅ <- ajoute cette ligne
 
     const supabase = createClient(
       'https://qgmxclxahaqnvvxhgcms.supabase.co',
