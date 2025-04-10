@@ -2,52 +2,61 @@ import fetch from "node-fetch";
 import { config } from "dotenv";
 
 config();
-
 const apiKey = process.env.OPENAI_API_KEY;
 
 export default async function genererLivre(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Méthode non autorisée' });
+  if (req.method !== "POST") {
+    return res.status(405).json({ message: "Méthode non autorisée" });
   }
 
   const { historique } = req.body;
 
   if (!apiKey || !historique || !Array.isArray(historique)) {
-    return res.status(400).json({ message: 'Clé API ou historique manquant/invalide' });
+    return res.status(400).json({ message: "Clé API ou historique manquant/invalide" });
   }
 
-  console.log("🚀 Envoi de l’historique complet au backend…");
+  console.log("🚀 Génération du livre par séquences logiques...");
 
-  // Étape 1 : Extraire uniquement les réponses utilisateur
-  const reponses = historique.filter(msg => msg.role === 'user').map(msg => msg.content.trim());
-  console.log("🧩 Nombre total de réponses utilisateur :", reponses.length);
+  // Étape 1 : Grouper les messages utilisateur par séquence
+  const sequences = {};
+  let currentSequence = "1";
 
-  // Étape 2 : Découpage par blocs de 3 réponses
-  const groupes = [];
-  for (let i = 0; i < reponses.length; i += 3) {
-    groupes.push(reponses.slice(i, i + 3).join("\n\n"));
+  for (const msg of historique) {
+    if (msg.role === "assistant" && msg.content.includes("### Séquence")) {
+      const match = msg.content.match(/### Séquence\s*:\s*(\d+)/i);
+      if (match) {
+        currentSequence = match[1];
+        continue;
+      }
+    }
+
+    if (msg.role === "user") {
+      if (!sequences[currentSequence]) sequences[currentSequence] = [];
+      sequences[currentSequence].push(msg.content.trim());
+    }
   }
 
-  console.log("✂️ Séquences à traiter :", groupes.length);
+  console.log("🧩 Séquences logiques détectées :", Object.keys(sequences).length);
 
-  // Étape 3 : Prompts
-  const promptSysteme = "Tu es un biographe professionnel, littéraire et humain.";
-  const promptUserBase = `Voici une partie d’interview biographique.
+  // Étape 2 : Générer un chapitre par séquence
+  const promptSysteme = "Tu es un biographe littéraire, empathique, humain.";
+  const promptChapitre = (bloc) => `Voici une séquence d’interview biographique :
+
+${bloc}
 
 Ta mission :
-- Rédige un passage narratif fluide, chronologique et chaleureux à partir du contenu fourni.
-- Utilise un style littéraire simple mais expressif, humain, sans artifices.
-- Ne reformule pas les questions. N’invente rien. Utilise uniquement les éléments ci-dessous.
-
-Contenu :
+- Génère un **chapitre fluide et narratif** à partir de ces éléments.
+- Commence par un **titre stylisé** (niveau titre principal).
+- Puis rédige un texte fluide, littéraire, chaleureux et réaliste à la première ou troisième personne.
+- Utilise seulement les faits présents (pas d’invention).
 `;
 
-  const morceaux = [];
+  const chapitres = [];
 
-  for (let i = 0; i < groupes.length; i++) {
-    const bloc = groupes[i];
+  for (const numero in sequences) {
+    const bloc = sequences[numero].join("\n\n");
     try {
-      console.log(`📤 Envoi séquence ${i + 1} / ${groupes.length}...`);
+      console.log(`📤 Traitement séquence ${numero}...`);
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -59,7 +68,7 @@ Contenu :
           temperature: 1.2,
           messages: [
             { role: "system", content: promptSysteme },
-            { role: "user", content: promptUserBase + bloc }
+            { role: "user", content: promptChapitre(bloc) }
           ]
         })
       });
@@ -67,22 +76,22 @@ Contenu :
       const data = await response.json();
       const texte = data?.choices?.[0]?.message?.content;
       if (texte) {
-        morceaux.push(texte.trim());
-        console.log("✅ Bloc généré avec succès");
+        chapitres.push(texte.trim());
+        console.log(`✅ Chapitre ${numero} généré`);
       } else {
-        console.warn("⚠️ Aucun texte généré pour ce bloc.");
+        console.warn(`⚠️ Aucun texte généré pour la séquence ${numero}`);
       }
     } catch (err) {
-      console.error("❌ Erreur pendant la génération d’un bloc :", err);
+      console.error(`❌ Erreur sur la séquence ${numero} :`, err);
     }
   }
 
-  const texteFinal = morceaux.join("\n\n");
+  const texteFinal = chapitres.join("\n\n");
 
   if (!texteFinal || texteFinal.length < 100) {
     return res.status(500).json({ message: "Le texte généré est trop court ou vide." });
   }
 
-  console.log("📘 Texte final généré avec succès.");
+  console.log("📘 Livre final généré avec succès.");
   res.status(200).json({ texte: texteFinal });
 }
