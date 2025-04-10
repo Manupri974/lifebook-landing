@@ -4,34 +4,69 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Interview LifeBook</title>
+
+  <!-- Liens externes -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  .message.bot h1,
-.message.bot h2,
-.message.bot h3 {
-  margin: 12px 0 6px;
-  font-weight: 600;
-  color: #6b1e8a;
-  font-size: 1.1em;
-}
-.message.bot p {
-  margin: 6px 0;
-  line-height: 1.5em;
-}
-.message.bot ul {
-  padding-left: 20px;
-  margin: 6px 0;
-}
-.message.bot li {
-  margin-bottom: 4px;
-}
-.message.bot strong {
-  font-weight: bold;
-  color: #4b145c;
-}
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <!-- Ton CSS personnalisé -->
   <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      background: linear-gradient(to right, #f3e8ff, #fff0f5);
+      color: #333;
+    }
+
+    header {
+      background: #fff;
+      padding: 20px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    header a {
+      text-decoration: none;
+      color: #a347ba;
+      font-weight: 600;
+      font-size: 1.4em;
+    }
+
+    /* ... tout ton style déjà en place ... */
+
+    .message.bot h1,
+    .message.bot h2,
+    .message.bot h3 {
+      margin: 12px 0 6px;
+      font-weight: 600;
+      color: #6b1e8a;
+      font-size: 1.1em;
+    }
+
+    .message.bot p {
+      margin: 6px 0;
+      line-height: 1.5em;
+    }
+
+    .message.bot ul {
+      padding-left: 20px;
+      margin: 6px 0;
+    }
+
+    .message.bot li {
+      margin-bottom: 4px;
+    }
+
+    .message.bot strong {
+      font-weight: bold;
+      color: #4b145c;
+    }
+  </style>
+</head>
     body {
       font-family: 'Poppins', sans-serif;
       margin: 0;
