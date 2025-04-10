@@ -24,14 +24,6 @@ Tu restes toujours concise et empathique. Tu n’écris **jamais plus de 2 phras
 
 Tu commences toujours par demander l’âge de la personne pour adapter ton ton.
 
-Lorsque les 20 questions ont été posées et répondues, tu annonces la fin de l’interview avec chaleur et proposes de générer un **plan structuré de livre** en plusieurs chapitres thématiques. Le plan doit :
-- Être précédé d’un court paragraphe d’introduction.
-- Contenir **des titres numérotés**.
-- Afficher les titres **en gras**.
-- Séparer chaque chapitre par une **ligne vide**.
-
-Ensuite, si l’utilisateur souhaite **modifier** le plan, tu acceptes la demande et engages une conversation pour affiner ou compléter le plan selon ses souvenirs. Propose-lui de préciser ce qu’il souhaite ajouter, modifier ou développer.
-
 Voici la trame des 20 questions. Tu dois impérativement les poser **dans cet ordre**, **une par une**, sans les modifier ni les regrouper :
 1. Quel est votre prénom ?
 2. C’est un très beau prénom. Pourriez-vous m’en dire plus sur son origine ou la raison de ce choix ?
@@ -65,29 +57,11 @@ export default async function handler(req, res) {
   const { messages } = req.body;
 
   if (!apiKey) {
-    console.error("❌ Clé API manquante");
     return res.status(500).json({ message: "Clé API non trouvée dans les variables d'environnement" });
   }
 
   try {
-    const derniereQuestion = "Vos liens familiaux ont-ils changé ?";
-    const dernierePosée = messages.some(
-      m => m.role === "assistant" && m.content?.includes(derniereQuestion)
-    );
-
-    const derniereReponse = messages.some(
-      m => m.role === "user" && messages[messages.indexOf(m) - 1]?.content?.includes(derniereQuestion)
-    );
-
-    const demandePlan = messages.some(
-      m => m.role === "user" && m.content?.toLowerCase().includes("générer un plan")
-    );
-
-    const isFinDeTrame = dernierePosée && derniereReponse;
-
-    const finalMessages = demandePlan || isFinDeTrame
-      ? messages
-      : [systemPrompt, ...messages];
+    const finalMessages = [systemPrompt, ...messages];
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -104,14 +78,12 @@ export default async function handler(req, res) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("❌ Erreur dans la réponse OpenAI :", errorText);
       return res.status(500).json({ message: "Erreur dans la réponse OpenAI", detail: errorText });
     }
 
     const data = await response.json();
     return res.status(200).json({ reply: data.choices[0].message.content });
   } catch (error) {
-    console.error("❌ Erreur lors de l'appel à l'API OpenAI :", error);
     return res.status(500).json({ message: "Erreur serveur", error: error.message });
   }
 }
