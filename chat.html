@@ -244,10 +244,13 @@ function afficher(auteur, texte, classe) {
   const msg = document.createElement("div");
   msg.className = "message " + classe;
 
-  // Si c'est un message du bot, on parse le Markdown en HTML
-  const contenu = classe === "bot" ? marked.parse(texte) : texte;
+  // Si c'est une réponse bot, on interprète le Markdown
+  if (classe === "bot") {
+    msg.innerHTML = `<strong>${auteur} :</strong><br>${marked.parse(texte)}`;
+  } else {
+    msg.innerHTML = `<strong>${auteur} :</strong> ${texte}`;
+  }
 
-  msg.innerHTML = `<strong>${auteur} :</strong><br>${contenu}`;
   document.getElementById("messages").appendChild(msg);
   document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
 }
