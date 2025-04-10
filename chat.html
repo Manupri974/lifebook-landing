@@ -8,10 +8,10 @@
   <!-- Liens externes -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
-  <!-- Ton CSS personnalisé -->
+  <!-- CSS global -->
   <style>
     body {
       font-family: 'Poppins', sans-serif;
@@ -36,8 +36,144 @@
       font-size: 1.4em;
     }
 
-    /* ... tout ton style déjà en place ... */
+    #chat {
+      max-width: 700px;
+      margin: 40px auto;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+      padding: 30px;
+    }
 
+    .message {
+      margin-bottom: 15px;
+      padding: 14px 18px;
+      border-radius: 12px;
+      line-height: 1.4em;
+    }
+
+    .bot {
+      background: #f3e8fa;
+      color: #5a2a82;
+      text-align: left;
+    }
+
+    .user {
+      background: #e1f5e8;
+      color: #21543d;
+      text-align: right;
+    }
+
+    #progression {
+      margin: 20px 0 10px;
+      font-size: 0.9em;
+      text-align: right;
+      color: #999;
+    }
+
+    .input-group {
+      position: relative;
+      margin-top: 10px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 14px 42px 14px 14px;
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      font-size: 1em;
+      box-sizing: border-box;
+    }
+
+    #speechButton {
+      position: absolute;
+      top: 50%;
+      right: 8px;
+      transform: translateY(-50%);
+      background: #d3a6e4;
+      border: none;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      color: white;
+      font-size: 0.9em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s ease, transform 0.3s ease;
+    }
+
+    #speechButton:hover {
+      background: #b674d3;
+    }
+
+    #speechButton.recording {
+      background: #a347ba;
+      animation: pulse 1.2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+      100% { transform: scale(1); }
+    }
+
+    .button-group {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .button-group button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px;
+      border: none;
+      border-radius: 12px;
+      background: #a347ba;
+      color: white;
+      font-weight: 600;
+      font-size: 0.9em;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .button-group button i {
+      font-size: 1em;
+    }
+
+    .button-group button:hover {
+      background: #912ca3;
+    }
+
+    #waveform {
+      width: 100%;
+      height: 6px;
+      background: linear-gradient(90deg, #a347ba 50%, #fff 50%);
+      background-size: 20px 100%;
+      background-repeat: repeat-x;
+      animation: wave 1s linear infinite;
+      display: none;
+      margin: 10px 0;
+      border-radius: 4px;
+    }
+
+    @keyframes wave {
+      0% { background-position: 0 0; }
+      100% { background-position: 20px 0; }
+    }
+
+    #messageStatus {
+      margin-top: 10px;
+      min-height: 20px;
+      font-size: 0.9em;
+    }
+
+    /* Markdown styles pour les réponses de l'IA */
     .message.bot h1,
     .message.bot h2,
     .message.bot h3 {
@@ -64,147 +200,6 @@
     .message.bot strong {
       font-weight: bold;
       color: #4b145c;
-    }
-  </style>
-</head>
-    body {
-      font-family: 'Poppins', sans-serif;
-      margin: 0;
-      background: linear-gradient(to right, #f3e8ff, #fff0f5);
-      color: #333;
-    }
-    header {
-      background: #fff;
-      padding: 20px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    header a {
-      text-decoration: none;
-      color: #a347ba;
-      font-weight: 600;
-      font-size: 1.4em;
-    }
-    #chat {
-      max-width: 700px;
-      margin: 40px auto;
-      background: #ffffff;
-      border-radius: 16px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
-      padding: 30px;
-    }
-    .message {
-      margin-bottom: 15px;
-      padding: 14px 18px;
-      border-radius: 12px;
-      line-height: 1.4em;
-    }
-    .bot {
-      background: #f3e8fa;
-      color: #5a2a82;
-      text-align: left;
-    }
-    .user {
-      background: #e1f5e8;
-      color: #21543d;
-      text-align: right;
-    }
-    #progression {
-      margin: 20px 0 10px;
-      font-size: 0.9em;
-      text-align: right;
-      color: #999;
-    }
-    .input-group {
-      position: relative;
-      margin-top: 10px;
-    }
-    input[type="text"] {
-      width: 100%;
-      padding: 14px 42px 14px 14px;
-      border: 1px solid #ccc;
-      border-radius: 12px;
-      font-size: 1em;
-      box-sizing: border-box;
-    }
-    #speechButton {
-      position: absolute;
-      top: 50%;
-      right: 8px;
-      transform: translateY(-50%);
-      background: #d3a6e4;
-      border: none;
-      border-radius: 50%;
-      width: 32px;
-      height: 32px;
-      cursor: pointer;
-      color: white;
-      font-size: 0.9em;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.2s ease, transform 0.3s ease;
-    }
-    #speechButton:hover {
-      background: #b674d3;
-    }
-    #speechButton.recording {
-      background: #a347ba;
-      animation: pulse 1.2s infinite;
-    }
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.15); }
-      100% { transform: scale(1); }
-    }
-    .button-group {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-      gap: 12px;
-      margin-top: 20px;
-    }
-    .button-group button {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 12px;
-      border: none;
-      border-radius: 12px;
-      background: #a347ba;
-      color: white;
-      font-weight: 600;
-      font-size: 0.9em;
-      cursor: pointer;
-      transition: background 0.2s ease;
-    }
-    .button-group button i {
-      font-size: 1em;
-    }
-    .button-group button:hover {
-      background: #912ca3;
-    }
-    #waveform {
-      width: 100%;
-      height: 6px;
-      background: linear-gradient(90deg, #a347ba 50%, #fff 50%);
-      background-size: 20px 100%;
-      background-repeat: repeat-x;
-      animation: wave 1s linear infinite;
-      display: none;
-      margin: 10px 0;
-      border-radius: 4px;
-    }
-    #messageStatus {
-      margin-top: 10px;
-      min-height: 20px;
-      font-size: 0.9em;
-    }
-    @keyframes wave {
-      0% { background-position: 0 0; }
-      100% { background-position: 20px 0; }
     }
   </style>
 </head>
