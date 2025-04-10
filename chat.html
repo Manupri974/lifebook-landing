@@ -236,7 +236,8 @@
   </div>
 
   <script type="module">
-  import { createClient } from 'https://esm.sh/@supabase/supabase-js';
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js';
+
     const supabase = createClient(
       'https://qgmxclxahaqnvvxhgcms.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnbXhjbHhhaGFxbnZ2eGhnY21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM3OTYxODYsImV4cCI6MjA1OTM3MjE4Nn0.PhMpyFo9ZRgtLHdRyo6MXNjFNFy5WkH8LeqWnPJJCIE'
@@ -249,21 +250,20 @@
 
     const status = document.getElementById("messageStatus");
 
-function afficher(auteur, texte, classe, estHTML = false) {
+function afficher(auteur, texte, classe) {
   const msg = document.createElement("div");
   msg.className = "message " + classe;
-  msg.innerHTML = `<strong>${auteur} :</strong><div>${estHTML ? texte : escapeHtml(texte)}</div>`;
+
+  // Si c'est une réponse bot, on interprète le Markdown
+  if (classe === "bot") {
+    msg.innerHTML = `<strong>${auteur} :</strong><br>${marked.parse(texte)}`;
+  } else {
+    msg.innerHTML = `<strong>${auteur} :</strong> ${texte}`;
+  }
+
   document.getElementById("messages").appendChild(msg);
   document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
 }
-
-function escapeHtml(text) {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
     function miseAJourProgression() {
       const count = historique.filter(m => m.role === "user").length;
       document.getElementById("progression").innerText = `Question ${count + 1} / 89`;
@@ -272,7 +272,6 @@ async function genererPlan() {
   const btn = document.getElementById("planBtn");
   btn.disabled = true;
   btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Génération...`;
-
   try {
     const response = await fetch("/api/plan", {
       method: "POST",
@@ -281,18 +280,15 @@ async function genererPlan() {
     });
 
     const data = await response.json();
+    console.log("Réponse plan:", data); // 🔍 debug
+
     if (!data || !data.texte) throw new Error("Réponse invalide");
 
-    // On utilise marked pour afficher le plan en markdown bien formaté
-    const markdownHtml = marked.parse(data.texte);
-    afficher("Plan proposé", markdownHtml, "bot", true);
-
-    // On l’ajoute à l’historique (optionnel si tu veux qu’il soit repris par l’IA ensuite)
-    historique.push({ role: "assistant", content: data.texte });
-
+    const html = marked.parse(data.texte); // ✅ transformer le markdown en HTML
+    afficher("Plan proposé", html, "bot");
   } catch (err) {
     console.error("Erreur lors de la génération du plan:", err);
-    alert("Erreur pendant la génération du plan.");
+    alert("Erreur lors de la génération du plan. Voir la console.");
   } finally {
     btn.disabled = false;
     btn.innerHTML = `<i class="fas fa-forward"></i> Générer plan`;
