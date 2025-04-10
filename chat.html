@@ -437,20 +437,67 @@ async function genererLivre() {
     const texteFinal = data.texte.trim();
     console.log("📘 Texte final généré :", texteFinal);
 
-    // PDF
+    // PDF stylisé
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    const lines = doc.splitTextToSize(texteFinal, 180);
-    let y = 20;
+    const doc = new jsPDF({
+      unit: "mm",
+      format: "a4"
+    });
 
-    for (const line of lines) {
-      doc.text(line, 15, y);
-      y += 7;
-      if (y > 280) {
-        doc.addPage();
-        y = 20;
+    // Définir la police Times et marges pros
+    const leftMargin = 25;
+    const rightMargin = 25;
+    const topMargin = 25;
+    const bottomMargin = 25;
+    const pageHeight = 297; // A4 height in mm
+    const usableWidth = 210 - leftMargin - rightMargin;
+
+    doc.setFont("times", "normal");
+    doc.setFontSize(12);
+
+    let y = topMargin;
+    let currentPage = 1;
+
+    const lines = texteFinal.split("\n");
+
+    lines.forEach(line => {
+      line = line.trim();
+      if (!line) {
+        y += 5;
+        return;
       }
-    }
+
+      // Détection des titres de chapitres
+      if (line.toLowerCase().startsWith("chapitre")) {
+        y += 10;
+        doc.setFont("times", "bold");
+        doc.setFontSize(14);
+        doc.text(line, leftMargin, y);
+        y += 10;
+        doc.setFont("times", "normal");
+        doc.setFontSize(12);
+      } else {
+        const wrapped = doc.splitTextToSize(line, usableWidth);
+        wrapped.forEach(wLine => {
+          if (y + 7 > pageHeight - bottomMargin) {
+            // Ajouter numéro de page en pied de page
+            doc.setFontSize(10);
+            doc.text(`${currentPage}`, 105, 290, { align: "center" });
+            doc.addPage();
+            currentPage++;
+            y = topMargin;
+            doc.setFontSize(12);
+          }
+          doc.text(wLine, leftMargin, y);
+          y += 7;
+        });
+        y += 2;
+      }
+    });
+
+    // Dernier numéro de page
+    doc.setFontSize(10);
+    doc.text(`${currentPage}`, 105, 290, { align: "center" });
 
     doc.save("LifeBook.pdf");
 
