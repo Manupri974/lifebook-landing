@@ -323,8 +323,12 @@ async function sendMessage() {
     }
 
     const data = await response.json();
-    const botText = data.reply;
+    let botText = data.reply;
 
+    // 🔧 Nettoyer le texte pour retirer toute mention "Séquence : X" au début
+    botText = botText.replace(/^Séquence\s*:\s*\d+\s*/i, "").trim();
+
+    // 🔍 Détection de la séquence logique
     const sequences = {
       1: ["Quel est votre prénom", "Pourriez-vous m’en dire plus sur son origine", "Quand et où êtes-vous né"],
       2: ["Où avez-vous grandi", "Quel était votre jeu ou activité préféré", "Parlez-moi un peu de vos parents", "Et vos frères et sœurs"],
@@ -343,16 +347,14 @@ async function sendMessage() {
 
     if (sequenceId) {
       console.log(`🧩 Nouvelle séquence détectée : ${sequenceId}`);
-      // 👉 On ajoute uniquement dans l’historique, sans affichage
-      historique.push({ role: "assistant", content: `### Séquence : ${sequenceId}` });
+      // Ajoute uniquement dans l'historique (avec balise, pas affichée à l’utilisateur)
+      historique.push({ role: "assistant", content: `### Séquence : ${sequenceId}\n\n${botText}` });
     } else {
       console.log("➡️ Pas de nouvelle séquence détectée (probablement une relance)");
+      historique.push({ role: "assistant", content: botText });
     }
 
-    // Ajout du texte réel du bot
-    historique.push({ role: "assistant", content: botText });
-
-    // Affichage propre
+    // ✅ Affichage sans balise
     afficher("LifeBook", botText, "bot");
     miseAJourProgression();
 
