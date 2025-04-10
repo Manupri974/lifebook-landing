@@ -16,7 +16,10 @@ export default async function handler(req, res) {
     return res.status(400).json({ message: "Clé API ou historique manquant/invalide" });
   }
 
-  const reponses = historique.filter(msg => msg.role === "user").map(msg => msg.content.trim()).join("\n\n");
+  const reponses = historique
+    .filter(msg => msg.role === "user")
+    .map(msg => msg.content.trim())
+    .join("\n\n");
 
   const prompt = `Tu es une biographe expérimentée.
 Voici les réponses fournies par une personne dans le cadre d'une interview biographique :
@@ -61,8 +64,12 @@ Termine en proposant à la personne de modifier, réorganiser ou enrichir ce pla
       return res.status(500).json({ message: "Texte trop court ou vide." });
     }
 
-    return res.status(200).json({ plan: texte.trim() });
+    // ✅ Correction ici : "texte" au lieu de "plan"
+    return res.status(200).json({ texte: texte.trim() });
   } catch (err) {
-    return res.status(500).json({ message: "Erreur lors de la génération du plan", error: err.message });
+    return res.status(500).json({
+      message: "Erreur lors de la génération du plan",
+      error: err.message
+    });
   }
 }
