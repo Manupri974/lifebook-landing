@@ -389,13 +389,12 @@ async function genererLivre() {
   try {
     console.log("🚀 Construction des segments logiques à partir de l’historique...");
 
-    // Étape 1 : Construction des segments
     const segments = {};
     let current = "1";
 
     for (const msg of historique) {
       if (msg.role === "assistant" && msg.content.includes("### Séquence")) {
-        const match = msg.content.match(/### Séquence\s*:\s*(\d+)/i);
+        const match = msg.content.match(/### Séquence\\s*:\\s*(\\d+)/i);
         if (match) {
           current = match[1];
         }
@@ -409,7 +408,6 @@ async function genererLivre() {
 
     console.log("🧠 Segments envoyés au backend :", segments);
 
-    // Étape 2 : Appel backend
     const response = await fetch("https://lifebook-landing.onrender.com/api/generer-livre", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -417,8 +415,6 @@ async function genererLivre() {
     });
 
     const rawText = await response.text();
-    console.log("📦 Réponse brute reçue :", rawText);
-
     let data;
     try {
       data = JSON.parse(rawText);
@@ -429,7 +425,6 @@ async function genererLivre() {
     }
 
     if (!data || !data.texte || data.texte.trim().length < 100) {
-      console.warn("⚠️ Réponse invalide ou trop courte :", data);
       alert("❌ Le texte généré est trop court. Vérifie les réponses.");
       return;
     }
@@ -437,67 +432,51 @@ async function genererLivre() {
     const texteFinal = data.texte.trim();
     console.log("📘 Texte final généré :", texteFinal);
 
-    // PDF stylisé
+    // 📚 Génération du PDF stylisé
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({
-      unit: "mm",
-      format: "a4"
-    });
+    const doc = new jsPDF({ unit: "mm", format: "a4" });
 
-    // Définir la police Times et marges pros
-    const leftMargin = 25;
-    const rightMargin = 25;
-    const topMargin = 25;
-    const bottomMargin = 25;
-    const pageHeight = 297; // A4 height in mm
-    const usableWidth = 210 - leftMargin - rightMargin;
+    doc.setFont("times", "normal"); // ✅ Police Times New Roman
+    const marginLeft = 25;
+    const marginRight = 20;
+    const marginTop = 25;
+    const marginBottom = 20;
+    const usableWidth = 210 - marginLeft - marginRight;
+    const usableHeight = 297 - marginTop - marginBottom;
 
-    doc.setFont("times", "normal");
+    const lines = doc.splitTextToSize(texteFinal, usableWidth);
+    let y = marginTop;
+    let page = 1;
+
     doc.setFontSize(12);
 
-    let y = topMargin;
-    let currentPage = 1;
-
-    const lines = texteFinal.split("\n");
-
-    lines.forEach(line => {
-      line = line.trim();
-      if (!line) {
-        y += 5;
-        return;
-      }
-
-      // Détection des titres de chapitres
-      if (line.toLowerCase().startsWith("chapitre")) {
-        y += 10;
+    for (const line of lines) {
+      if (line.startsWith("Chapitre")) {
         doc.setFont("times", "bold");
         doc.setFontSize(14);
-        doc.text(line, leftMargin, y);
-        y += 10;
+      } else {
         doc.setFont("times", "normal");
         doc.setFontSize(12);
-      } else {
-        const wrapped = doc.splitTextToSize(line, usableWidth);
-        wrapped.forEach(wLine => {
-          if (y + 7 > pageHeight - bottomMargin) {
-            // Ajouter numéro de page en pied de page
-            doc.setFontSize(10);
-            doc.text(`${currentPage}`, 105, 290, { align: "center" });
-            doc.addPage();
-            currentPage++;
-            y = topMargin;
-            doc.setFontSize(12);
-          }
-          doc.text(wLine, leftMargin, y);
-          y += 7;
-        });
-        y += 2;
       }
-    });
 
-    // Dernier numéro de page
+      doc.text(line, marginLeft, y);
+      y += 7;
+
+      if (y > 297 - marginBottom) {
+        // Pagination
+        doc.setFontSize(10);
+        doc.setFont("times", "italic");
+        doc.text(`Page ${page}`, 105, 290, { align: "center" });
+        doc.addPage();
+        page++;
+        y = marginTop;
+      }
+    }
+
+    // Dernière pagination
     doc.setFontSize(10);
-    doc.text(`${currentPage}`, 105, 290, { align: "center" });
+    doc.setFont("times", "italic");
+    doc.text(`Page ${page}`, 105, 290, { align: "center" });
 
     doc.save("LifeBook.pdf");
 
@@ -509,6 +488,7 @@ async function genererLivre() {
     btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
   }
 }
+
     async function sauvegarder() {
       status.textContent = "⏳ Sauvegarde en cours...";
       status.style.color = "black";
