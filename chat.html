@@ -163,7 +163,7 @@
     </div>
     <div class="button-group">
       <button id="sendBtn"><i class="fas fa-paper-plane"></i> Envoyer</button>
-      <button id="skipBtn"><i class="fas fa-forward"></i> Générer plan</button>
+  <button id="planBtn"><i class="fas fa-forward"></i> Générer plan</button>
       <button id="generateBtn"><i class="fas fa-book"></i> Générer livre</button>
       <button id="saveButton"><i class="fas fa-save"></i> Sauvegarder</button>
     </div>
@@ -498,10 +498,13 @@ const response = await fetch("https://lifebook-landing.onrender.com/api/generer-
     }
 
     document.getElementById("sendBtn").addEventListener("click", sendMessage);
-document.getElementById("planBtn").addEventListener("click", genererPlan);
     document.getElementById("generateBtn").addEventListener("click", genererLivre);
     document.getElementById("saveButton").addEventListener("click", sauvegarder);
     document.getElementById("speechButton").addEventListener("click", toggleRecording);
+    const planBtn = document.getElementById("planBtn");
+if (planBtn) {
+  planBtn.addEventListener("click", genererPlan);
+}
     document.getElementById("userInput").addEventListener("keypress", e => {
       if (e.key === "Enter") sendMessage();
     });
