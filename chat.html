@@ -325,9 +325,6 @@ async function sendMessage() {
     const data = await response.json();
     let botText = data.reply;
 
-    afficher("LifeBook", botText, "bot");
-
-    // 🎯 Détection de la séquence logique
     const sequences = {
       1: ["Quel est votre prénom", "Pourriez-vous m’en dire plus sur son origine", "Quand et où êtes-vous né"],
       2: ["Où avez-vous grandi", "Quel était votre jeu ou activité préféré", "Parlez-moi un peu de vos parents", "Et vos frères et sœurs"],
@@ -346,17 +343,18 @@ async function sendMessage() {
 
     if (sequenceId) {
       console.log(`🧩 Nouvelle séquence détectée : ${sequenceId}`);
-      const tag = `### Séquence : ${sequenceId}`;
-      botText = `${tag}\n\n${botText}`; // ✅ injecter la balise markdown directement
+      // Ajoute uniquement dans l'historique
+      historique.push({ role: "assistant", content: `### Séquence : ${sequenceId}\n\n${botText}` });
     } else {
       console.log("➡️ Pas de nouvelle séquence détectée (probablement une relance)");
+      historique.push({ role: "assistant", content: botText });
     }
 
-    historique.push({ role: "assistant", content: botText });
-
+    // ✅ Affichage propre à l'utilisateur (sans balise)
+    afficher("LifeBook", botText, "bot");
     miseAJourProgression();
 
-    // 🔊 Lecture vocale
+    // Lecture vocale
     fetch("/api/voice", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
