@@ -163,8 +163,8 @@
     </div>
     <div class="button-group">
       <button id="sendBtn"><i class="fas fa-paper-plane"></i> Envoyer</button>
-      <button id="skipBtn"><i class="fas fa-forward"></i> Suivante</button>
-      <button id="generateBtn"><i class="fas fa-book"></i> Générer</button>
+      <button id="skipBtn"><i class="fas fa-forward"></i> Générer plan</button>
+      <button id="generateBtn"><i class="fas fa-book"></i> Générer livre</button>
       <button id="saveButton"><i class="fas fa-save"></i> Sauvegarder</button>
     </div>
     <div id="waveform"></div>
@@ -198,7 +198,27 @@
       const count = historique.filter(m => m.role === "user").length;
       document.getElementById("progression").innerText = `Question ${count + 1} / 89`;
     }
-
+async function genererPlan() {
+  const btn = document.getElementById("planBtn");
+  btn.disabled = true;
+  btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Génération...`;
+  try {
+    const response = await fetch("/api/plan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ historique })
+    });
+    const data = await response.json();
+    if (!data || !data.texte) throw new Error("Réponse invalide");
+    afficher("Plan proposé", data.texte, "bot");
+  } catch (err) {
+    console.error("Erreur lors de la génération du plan:", err);
+    alert("Erreur lors de la génération du plan. Voir la console.");
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<i class="fas fa-forward"></i> Générer plan`;
+  }
+}
 async function sendMessage() {
   const input = document.getElementById("userInput");
   const text = input.value.trim();
@@ -252,10 +272,6 @@ async function sendMessage() {
     afficher("LifeBook", "⚠️ Une erreur s’est produite. Vérifiez votre connexion ou réessayez.", "bot");
   }
 }
-    function passerQuestion() {
-      historique.push({ role: "user", content: "passons" });
-      sendMessage();
-    }
 async function genererLivre() {
   if (!historique || historique.length < 4) {
     alert("⛔️ Pas assez de contenu pour générer un livre. Complétez plus de réponses.");
@@ -482,7 +498,7 @@ const response = await fetch("https://lifebook-landing.onrender.com/api/generer-
     }
 
     document.getElementById("sendBtn").addEventListener("click", sendMessage);
-    document.getElementById("skipBtn").addEventListener("click", passerQuestion);
+document.getElementById("planBtn").addEventListener("click", genererPlan);
     document.getElementById("generateBtn").addEventListener("click", genererLivre);
     document.getElementById("saveButton").addEventListener("click", sauvegarder);
     document.getElementById("speechButton").addEventListener("click", toggleRecording);
