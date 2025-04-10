@@ -9,33 +9,55 @@ export default async function genererLivre(req, res) {
     return res.status(405).json({ message: "Méthode non autorisée" });
   }
 
-  const { segments } = req.body;
+  const { historique } = req.body;
 
-  if (!apiKey || !segments || typeof segments !== "object") {
-    return res.status(400).json({ message: "Clé API ou segments manquants/invalides" });
+  if (!apiKey || !historique || !Array.isArray(historique)) {
+    return res.status(400).json({ message: "Clé API ou historique manquant/invalide" });
   }
 
-  console.log("🚀 Génération du livre à partir des segments logiques...");
-  console.log("🧩 Nombre de segments détectés :", Object.keys(segments).length);
-  console.log("📦 Segments reçus :", segments);
+  console.log("🚀 Génération du livre par séquences logiques...");
 
-  // Prompt base
+  // Étape 1 : Grouper les messages utilisateur par séquence
+  const sequences = {};
+  let currentSequence = "1";
+
+  for (const msg of historique) {
+    if (msg.role === "assistant" && msg.content.includes("### Séquence")) {
+      const match = msg.content.match(/### Séquence\s*:\s*(\d+)/i);
+      if (match) {
+        currentSequence = match[1];
+        console.log(`🔀 Passage à la séquence ${currentSequence}`);
+        continue;
+      }
+    }
+
+    if (msg.role === "user") {
+      if (!sequences[currentSequence]) sequences[currentSequence] = [];
+      sequences[currentSequence].push(msg.content.trim());
+    }
+  }
+
+  const total = Object.keys(sequences).length;
+  console.log("🧩 Nombre de séquences détectées :", total);
+  console.log("🧾 Contenu des séquences :", sequences);
+
+  // Étape 2 : Générer un chapitre par séquence
   const promptSysteme = "Tu es un biographe littéraire, empathique, humain.";
-  const promptChapitre = (bloc) => `Voici une séquence d’interview biographique :
+  const promptChapitre = (bloc, num) => `Voici une séquence d’interview biographique :
 
 ${bloc}
 
 Ta mission :
-- Génère un **chapitre fluide et narratif** à partir de ces éléments.
-- Commence par un **titre stylisé** (niveau titre principal).
+- Génére un **chapitre fluide et narratif** à partir de ces éléments.
+- Commence par un **titre stylisé** pour le chapitre ${num}, par exemple : "Chapitre ${num} — Le goût de l’enfance".
 - Puis rédige un texte fluide, littéraire, chaleureux et réaliste à la première ou troisième personne.
-- Utilise seulement les faits présents (pas d’invention).
-`;
+- N’invente rien. Utilise uniquement les faits évoqués.
+- Évite les répétitions. Le style doit rester simple et fluide.`;
 
   const chapitres = [];
 
-  for (const numero in segments) {
-    const bloc = segments[numero].join("\n\n");
+  for (const numero in sequences) {
+    const bloc = sequences[numero].join("\n\n");
     console.log(`📤 Envoi de la séquence ${numero} à l’API...`);
     console.log("📄 Contenu de la séquence :", bloc);
 
@@ -48,10 +70,10 @@ Ta mission :
         },
         body: JSON.stringify({
           model: "gpt-4o",
-          temperature: 1.2,
+          temperature: 1.1,
           messages: [
             { role: "system", content: promptSysteme },
-            { role: "user", content: promptChapitre(bloc) }
+            { role: "user", content: promptChapitre(bloc, numero) }
           ]
         })
       });
@@ -61,7 +83,7 @@ Ta mission :
 
       if (texte) {
         chapitres.push(texte.trim());
-        console.log(`✅ Chapitre généré pour la séquence ${numero}`);
+        console.log(`✅ Chapitre ${numero} généré`);
       } else {
         console.warn(`⚠️ Aucune réponse pour la séquence ${numero}`, data);
       }
