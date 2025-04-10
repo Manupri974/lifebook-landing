@@ -1,83 +1,97 @@
-// api/generer-livre.js – Génération du livre final (PDF)
-
 import fetch from "node-fetch";
 import { config } from "dotenv";
+
 config();
 
-export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ message: "Méthode non autorisée" });
+const apiKey = process.env.OPENAI_API_KEY;
+
+export default async function genererLivre(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ message: 'Méthode non autorisée' });
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
   const { historique } = req.body;
 
   if (!apiKey || !historique || !Array.isArray(historique)) {
-    return res.status(400).json({ message: "Clé API ou historique manquant/invalide" });
+    return res.status(400).json({ message: 'Clé API ou historique manquant/invalide' });
   }
 
-  // 1. Récupérer le dernier plan (markdown)
-  const dernierPlanMsg = [...historique].reverse().find(
-    (msg) => msg.role === "assistant" && msg.content.startsWith("## Chapitre")
-  );
+  console.log("🚀 Envoi de l’historique complet au backend…");
 
-  if (!dernierPlanMsg) {
-    return res.status(400).json({ message: "Aucun plan trouvé dans l'historique." });
+  const reponses = historique.filter(msg => msg.role === 'user').map(msg => msg.content.trim());
+  console.log("🧩 Nombre total de réponses utilisateur :", reponses.length);
+
+  const groupes = [];
+  for (let i = 0; i < reponses.length; i += 3) {
+    groupes.push(reponses.slice(i, i + 3).join("\n\n"));
   }
 
-  const planMarkdown = dernierPlanMsg.content.trim();
+  console.log("✂️ Séquences à traiter :", groupes.length);
 
-  // 2. Extraire les réponses utilisateur précédant le plan
-  const indexDernierPlan = historique.findIndex((msg) => msg === dernierPlanMsg);
-  const reponsesUtilisateur = historique
-    .slice(0, indexDernierPlan)
-    .filter((msg) => msg.role === "user")
-    .map((msg) => `- ${msg.content.trim()}`)
-    .join("\n\n");
+  const promptSysteme = "Tu es un biographe professionnel, littéraire et humain.";
+  const promptUserBase = `Voici une partie d’interview biographique.
 
-  // 3. Prompt de synthèse
-  const prompt = `Voici un plan structuré pour une biographie :
+Ta mission :
+- Rédige un passage narratif fluide, structuré, chronologique et humain à partir du contenu fourni.
+- Structure le texte avec des **titres de chapitres** (niveau markdown : ## Chapitre X : Titre).
+- N’invente rien. Utilise uniquement les éléments fournis.
 
-${planMarkdown}
+Contenu :
+`;
 
-Voici les réponses de la personne :
+  const morceaux = [];
 
-${reponsesUtilisateur}
+  for (let i = 0; i < groupes.length; i++) {
+    const bloc = groupes[i];
+    try {
+      console.log(`📤 Envoi séquence ${i + 1} / ${groupes.length}...`);
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-4o",
+          temperature: 1.2,
+          messages: [
+            { role: "system", content: promptSysteme },
+            { role: "user", content: promptUserBase + bloc }
+          ]
+        })
+      });
 
-Rédige un texte biographique vivant et fluide, structuré selon le plan. Utilise uniquement les réponses fournies, sans rien inventer.`;
-
-  try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o",
-        temperature: 1,
-        messages: [
-          {
-            role: "system",
-            content: "Tu es une biographe expérimentée et rigoureuse."
-          },
-          {
-            role: "user",
-            content: prompt
-          }
-        ]
-      })
-    });
-
-    const data = await response.json();
-    const texte = data?.choices?.[0]?.message?.content;
-
-    if (!texte || texte.length < 100) {
-      return res.status(500).json({ message: "Texte trop court ou vide." });
+      const data = await response.json();
+      const texte = data?.choices?.[0]?.message?.content;
+      if (texte) {
+        morceaux.push(texte.trim());
+        console.log("✅ Bloc généré avec succès");
+      } else {
+        console.warn("⚠️ Aucun texte généré pour ce bloc.");
+      }
+    } catch (err) {
+      console.error("❌ Erreur pendant la génération d’un bloc :", err);
     }
-
-    return res.status(200).json({ texte: texte.trim(), plan: planMarkdown });
-  } catch (err) {
-    return res.status(500).json({ message: "Erreur lors de la génération", error: err.message });
   }
+
+  const texteFinal = morceaux.join("\n\n");
+
+  if (!texteFinal || texteFinal.length < 100) {
+    return res.status(500).json({ message: "Le texte généré est trop court ou vide." });
+  }
+
+  // EXTRACTION DU PLAN depuis les titres de chapitre (markdown)
+  const lignes = texteFinal.split("\n");
+  const plan = lignes
+    .filter(l => l.trim().startsWith("## "))
+    .map((l, idx) => `- ${l.replace("##", "").trim()}`)
+    .join("\n");
+
+  console.log("📘 Texte final généré avec succès.");
+  console.log("📋 Plan extrait :", plan || "Aucun titre détecté");
+
+  res.status(200).json({
+    texte: texteFinal,
+    plan: plan || null,
+  });
 }
