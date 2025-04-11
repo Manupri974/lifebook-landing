@@ -325,8 +325,8 @@ async function sendMessage() {
     const data = await response.json();
     let botText = data.reply;
 
-    // 🔧 Nettoyer le texte pour retirer toute mention "Séquence : X" au début
-    botText = botText.replace(/^Séquence\s*:\s*\d+\s*/i, "").trim();
+    // 🔧 Nettoyer les séquences visibles AVANT affichage
+    const cleanText = botText.replace(/###\s*Séquence\s*:?[\s]*\d+/gi, "").trim();
 
     // 🔍 Détection de la séquence logique
     const sequences = {
@@ -347,22 +347,20 @@ async function sendMessage() {
 
     if (sequenceId) {
       console.log(`🧩 Nouvelle séquence détectée : ${sequenceId}`);
-      // Ajoute uniquement dans l'historique (avec balise, pas affichée à l’utilisateur)
       historique.push({ role: "assistant", content: `### Séquence : ${sequenceId}\n\n${botText}` });
     } else {
       console.log("➡️ Pas de nouvelle séquence détectée (probablement une relance)");
       historique.push({ role: "assistant", content: botText });
     }
 
-    // ✅ Affichage sans balise
-    afficher("LifeBook", botText, "bot");
+    afficher("LifeBook", cleanText, "bot");
     miseAJourProgression();
 
     // Lecture vocale
     fetch("/api/voice", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: botText })
+      body: JSON.stringify({ text: cleanText })
     })
       .then(res => res.blob())
       .then(blob => {
@@ -375,7 +373,6 @@ async function sendMessage() {
     afficher("LifeBook", "⚠️ Une erreur s’est produite. Vérifiez votre connexion ou réessayez.", "bot");
   }
 }
-
 async function genererLivre() {
   if (!historique || historique.length < 4) {
     alert("⛔️ Pas assez de contenu pour générer un livre. Complétez plus de réponses.");
@@ -584,11 +581,14 @@ alert("📘 Livre généré avec succès !");
           historique = data.content;
          historique.forEach(msg => {
   if (msg.role === "assistant" && msg.content.includes("## Chapitre")) {
-    // Si c'est un plan au format markdown
     const html = marked.parse(msg.content);
     afficher("Plan proposé", html, "bot");
   } else {
-    afficher(msg.role === "user" ? "Vous" : "LifeBook", msg.content, msg.role);
+    const isBot = msg.role === "assistant";
+    const texteNettoye = isBot
+      ? msg.content.replace(/###\s*Séquence\s*:?[\s]*\d+/gi, "").trim()
+      : msg.content;
+    afficher(isBot ? "LifeBook" : "Vous", texteNettoye, msg.role);
   }
 });
           miseAJourProgression();
