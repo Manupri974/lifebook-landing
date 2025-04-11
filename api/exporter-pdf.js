@@ -30,12 +30,12 @@ router.post('/', async (req, res) => {
 
     html = html.replace("<!-- contenu injecté dynamiquement -->", contenu);
 
-    // Lancer Puppeteer avec chemin Chrome forcé
-   const browser = await puppeteer.launch({
-  headless: true,
-  executablePath: process.env.CHROME_BIN,
-  args: ['--no-sandbox', '--disable-setuid-sandbox']
-});
+    // Lancer Puppeteer (aucun chemin forcé ici)
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle0' });
 
