@@ -18,7 +18,7 @@ router.post('/', async (req, res) => {
     const templatePath = path.resolve('templates', 'template.html');
     let html = await fs.readFile(templatePath, 'utf-8');
 
-    // 2. Formatter le contenu texte en HTML (ajoute balises <h2> pour chapitres, <p> pour paragraphes)
+    // 2. Formatter le contenu en HTML
     const contenu = texte
       .split(/\n+/)
       .map((p) => {
@@ -32,12 +32,12 @@ router.post('/', async (req, res) => {
     // 3. Injecter le contenu dans le template
     html = html.replace("<!-- contenu injecté dynamiquement -->", contenu);
 
-    // 4. Génération du PDF
+    // 4. Lancer Puppeteer en précisant explicitement le chemin de Chrome
     const browser = await puppeteer.launch({
       headless: true,
+      executablePath: process.env.CHROME_BIN || '/usr/bin/google-chrome-stable',
       args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
-
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle0' });
 
