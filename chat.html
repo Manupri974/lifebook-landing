@@ -325,7 +325,7 @@ async function sendMessage() {
     const data = await response.json();
     let botText = data.reply;
 
-    // 🔧 Nettoyer le texte pour retirer toute mention "Séquence : X" au début
+    // 🔧 Nettoyer toute mention de "Séquence : X" au début
     botText = botText.replace(/^Séquence\s*:\s*\d+\s*/i, "").trim();
 
     // 🔍 Détection de la séquence logique
@@ -347,18 +347,20 @@ async function sendMessage() {
 
     if (sequenceId) {
       console.log(`🧩 Nouvelle séquence détectée : ${sequenceId}`);
-      // Ajoute uniquement dans l'historique (avec balise, pas affichée à l’utilisateur)
-      historique.push({ role: "assistant", content: `### Séquence : ${sequenceId}\n\n${botText}` });
+      historique.push({
+        role: "assistant",
+        content: botText,
+        sequence: sequenceId // ✅ stocké proprement
+      });
     } else {
       console.log("➡️ Pas de nouvelle séquence détectée (probablement une relance)");
       historique.push({ role: "assistant", content: botText });
     }
 
-    // ✅ Affichage sans balise
     afficher("LifeBook", botText, "bot");
     miseAJourProgression();
 
-    // Lecture vocale
+    // 🎧 Lecture vocale
     fetch("/api/voice", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -584,11 +586,14 @@ alert("📘 Livre généré avec succès !");
           historique = data.content;
          historique.forEach(msg => {
   if (msg.role === "assistant" && msg.content.includes("## Chapitre")) {
-    // Si c'est un plan au format markdown
+    // 🧠 C’est un plan de type markdown → rendu HTML
     const html = marked.parse(msg.content);
     afficher("Plan proposé", html, "bot");
   } else {
-    afficher(msg.role === "user" ? "Vous" : "LifeBook", msg.content, msg.role);
+    const isBot = msg.role === "assistant";
+    const texte = msg.content || "";
+
+    afficher(isBot ? "LifeBook" : "Vous", texte.trim(), msg.role);
   }
 });
           miseAJourProgression();
