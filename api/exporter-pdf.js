@@ -1,4 +1,3 @@
-// /api/exporter-pdf.js
 import express from 'express';
 import puppeteer from 'puppeteer';
 import fs from 'fs/promises';
@@ -14,11 +13,11 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Texte insuffisant pour générer un PDF.' });
     }
 
-    // 1. Lire le template HTML
+    // Lire le template HTML
     const templatePath = path.resolve('templates', 'template.html');
     let html = await fs.readFile(templatePath, 'utf-8');
 
-    // 2. Formatter le contenu en HTML
+    // Formatter le texte
     const contenu = texte
       .split(/\n+/)
       .map((p) => {
@@ -29,15 +28,15 @@ router.post('/', async (req, res) => {
       })
       .join("\n");
 
-    // 3. Injecter le contenu dans le template
     html = html.replace("<!-- contenu injecté dynamiquement -->", contenu);
 
-    // 4. Lancer Puppeteer en précisant explicitement le chemin de Chrome
+    // Lancer Puppeteer avec chemin Chrome forcé
     const browser = await puppeteer.launch({
       headless: true,
-      executablePath: process.env.CHROME_BIN || '/usr/bin/google-chrome-stable',
+      executablePath: process.env.CHROME_BIN || '/usr/bin/google-chrome', // 🔥 le bon chemin pour Render
       args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
+
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle0' });
 
