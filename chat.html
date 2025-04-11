@@ -451,11 +451,19 @@ async function genererLivre() {
       return;
     }
 
-    const blob = await pdfResponse.blob();
-    const url = URL.createObjectURL(blob);
-    window.open(url);
+   const blob = await pdfResponse.blob();
+const url = URL.createObjectURL(blob);
 
-    alert("📘 Livre généré avec succès !");
+// Forcer le téléchargement
+const a = document.createElement("a");
+a.href = url;
+a.download = "LifeBook.pdf";
+document.body.appendChild(a);
+a.click();
+a.remove();
+
+alert("📘 Livre généré avec succès !");
+
   } catch (error) {
     console.error("❌ Erreur lors de la génération :", error);
     alert("❌ Une erreur est survenue pendant la génération. Voir la console.");
