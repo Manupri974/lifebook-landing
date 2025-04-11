@@ -5,9 +5,9 @@ import exporterPdf from "./api/exporter-pdf.js"; // ✅ réactivé
 const app = express();
 app.use(express.json());
 
-// ✅ CORS
+// ✅ CORS autorisé uniquement pour Vercel
 app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Origin", "https://lifebook-landing.vercel.app"); // ✅ précise l'origine
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
