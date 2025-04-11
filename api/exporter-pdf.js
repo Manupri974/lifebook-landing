@@ -1,6 +1,8 @@
 // /api/exporter-pdf.js
 import express from 'express';
 import puppeteer from 'puppeteer';
+import fs from 'fs/promises';
+import path from 'path';
 
 const router = express.Router();
 
@@ -12,43 +14,25 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Texte insuffisant pour générer un PDF.' });
     }
 
-    // Construction du HTML stylisé
-    const html = `
-      <html>
-        <head>
-          <style>
-            @page {
-              size: A5;
-              margin: 25mm 20mm 25mm 30mm;
-            }
-            body {
-              font-family: 'Georgia', serif;
-              font-size: 11pt;
-              line-height: 1.6;
-              text-align: justify;
-            }
-            h2 {
-              text-align: center;
-              font-size: 14pt;
-              margin-top: 2em;
-            }
-            p {
-              margin-bottom: 1em;
-            }
-            .page-break {
-              page-break-before: always;
-            }
-          </style>
-        </head>
-        <body>
-          ${texte
-            .split("\n")
-            .map(p => p.trim().startsWith("Chapitre") ? `<h2>${p.trim()}</h2>` : `<p>${p.trim()}</p>`)
-            .join("\n")}
-        </body>
-      </html>
-    `;
+    // 1. Lire le template HTML
+    const templatePath = path.resolve('templates', 'template.html');
+    let html = await fs.readFile(templatePath, 'utf-8');
 
+    // 2. Formatter le contenu texte en HTML (ajoute balises <h2> pour chapitres, <p> pour paragraphes)
+    const contenu = texte
+      .split(/\n+/)
+      .map((p) => {
+        if (/^Chapitre\s+\d+/i.test(p.trim())) {
+          return `<h2 class="chapitre">${p.trim()}</h2>`;
+        }
+        return `<p>${p.trim()}</p>`;
+      })
+      .join("\n");
+
+    // 3. Injecter le contenu dans le template
+    html = html.replace("<!-- contenu injecté dynamiquement -->", contenu);
+
+    // 4. Génération du PDF
     const browser = await puppeteer.launch({
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox']
@@ -63,15 +47,15 @@ router.post('/', async (req, res) => {
       margin: {
         top: '25mm',
         bottom: '25mm',
-        left: '30mm',
-        right: '20mm',
+        left: '25mm',
+        right: '25mm',
       }
     });
 
     await browser.close();
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename=lifebook.pdf');
+    res.setHeader('Content-Disposition', 'inline; filename=lifebook.pdf');
     res.send(pdfBuffer);
 
   } catch (err) {
