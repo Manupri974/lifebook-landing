@@ -1,20 +1,15 @@
-# ✅ Base officielle avec Node.js + Chromium intégré
-FROM zenika/node:20-chrome
+FROM browserless/chrome:latest
 
-# Crée le dossier d’app
+# Installer Node.js 20
+RUN apk add --no-cache nodejs npm
+
 WORKDIR /app
 
-# Copie les fichiers package.json / lock
 COPY package*.json ./
-
-# Installe les dépendances
 RUN npm install
 
-# Copie tout le reste du projet
 COPY . .
 
-# Expose le port attendu par Render
 EXPOSE 3000
 
-# Lance le serveur
 CMD ["npm", "start"]
