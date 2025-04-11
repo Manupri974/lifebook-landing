@@ -386,6 +386,8 @@ async function genererLivre() {
   btn.disabled = true;
   btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Génération...`;
 
+  const API_BASE = "https://lifebook-backend-docker.onrender.com"; // ← Remplace ici si ton URL est différente
+
   try {
     console.log("🚀 Étape 1 : Construction des segments...");
 
@@ -406,7 +408,7 @@ async function genererLivre() {
     console.log("✅ Segments construits :", segments);
 
     console.log("📤 Étape 2 : Envoi au backend...");
-    const response = await fetch("https://lifebook-landing.onrender.com/api/generer-livre", {
+    const response = await fetch(`${API_BASE}/api/generer-livre`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ segments })
@@ -437,7 +439,7 @@ async function genererLivre() {
     const texteFinal = data.texte.trim();
     console.log("🖨️ Étape 3 : Génération du PDF stylisé via backend...");
 
-    const pdfResponse = await fetch("https://lifebook-landing.onrender.com/api/exporter-pdf", {
+    const pdfResponse = await fetch(`${API_BASE}/api/exporter-pdf`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ texte: texteFinal })
@@ -462,6 +464,7 @@ async function genererLivre() {
     btn.innerHTML = `<i class="fas fa-book"></i> Générer`;
   }
 }
+
 
     async function sauvegarder() {
       status.textContent = "⏳ Sauvegarde en cours...";
